@@ -1,7 +1,7 @@
 {
 	"name": "web-component-live-scoped-css-polyfill",
 	"version": "0.0.1",
-	"licence": "MIT",
+	"license": "MIT",
 	"homepage": "https://github.com/capricorn86/web-component-live-scoped-css-polyfill#readme",
 	"repository": "https://github.com/capricorn86/web-component-live-scoped-css-polyfill",
 	"author": "David Ortner",
