@@ -79,7 +79,7 @@ require('web-component-live-scoped-css-polyfill');
 | renderMethod | string  | null    | Name of the render method that is called on each render. This will be determined automatically by default (depending on which library you are using). |
 | force        | boolean | false   | Forces the polyfill to be loaded and bypasses checks for if it should be loaded |
 
-### Render method by library
+### Supported libraries
 
 | Library     | Render method        |
 | ----------- | -------------------- |
