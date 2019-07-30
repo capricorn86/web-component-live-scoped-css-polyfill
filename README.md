@@ -30,7 +30,7 @@ This polyfill should be added last as it is dependent on other polyfills like cu
 
 ### Include as a package
 
-*Note! The bellow file can be found in "node_modules/web-component-live-scoped-css-polyfill/lib/**".*
+*Note! The bellow file can be found here: node_modules/web-component-live-scoped-css-polyfill/lib/live-scoped-css-polyfill.min.js.*
 
 ```html
 <script src="live-scoped-css-polyfill.min.js"></script>
@@ -90,6 +90,11 @@ require('web-component-live-scoped-css-polyfill');
 | slimjs      | onRender()           |
 | hybrid.js   | render()             |
 
+
+# Known Limitations
+Only ":host" and normal CSS selectors are supported at the moment.
+
+If you have a need for a missing feature, please let me know, and I will do my best to add it.
 
 # How to Develop
 

@@ -33,14 +33,14 @@ window.customElements.define = function(name, componentClass) {
 
 				return result;
 			};
-			
+
 			break;
 		}
 	}
 
 	componentClass.prototype.connectedCallback = function() {
 		this.__xPathCSSGenerator = new XPathCSSGenerator(this);
-		this.__webComponentPolyfill.cssGenerator.connect();
+		this.__xPathCSSGenerator.connect();
 
 		if (originalConnectedCallback) {
 			originalConnectedCallback.call(this);
@@ -48,7 +48,7 @@ window.customElements.define = function(name, componentClass) {
 	};
 
 	componentClass.prototype.disconnectedCallback = function() {
-		this.__webComponentPolyfill.cssGenerator.disconnect();
+		this.__xPathCSSGenerator.disconnect();
 		if (originalDisconnectedCallback) {
 			originalDisconnectedCallback.call(this);
 		}
