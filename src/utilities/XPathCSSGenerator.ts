@@ -6,11 +6,10 @@ const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
  */
 export default class XPathCSSGenerator {
 	private static index = 0;
-	private static cache = new Map();
 	public id: string;
-	public cachedId: string;
 	private element: HTMLElement;
 	private globalStyle: HTMLElement;
+	private latestCSS: string = null;
 
 	/**
 	 * Constructor.
@@ -25,6 +24,7 @@ export default class XPathCSSGenerator {
 	 * Connects it.
 	 */
 	public connect(): void {
+		document.head.appendChild(this.globalStyle);
 		if (!this.element.classList.contains(this.id)) {
 			this.element.classList.add(this.id);
 		}
@@ -36,46 +36,25 @@ export default class XPathCSSGenerator {
 	public disconnect(): void {
 		document.head.removeChild(this.globalStyle);
 		this.element.classList.remove(this.id);
-		this.element.classList.remove(this.cachedId);
 	}
 
 	/**
 	 * Updates the global style.
 	 */
 	public update(): void {
-		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
-		const css = styles.map(style => style.textContent);
-		const cached = cache.get(css);
 
 		for (const style of styles) {
-			style.setAttribute('media', 'max-width: 1px');
+			if (!style.hasAttribute('media')) {
+				style.setAttribute('media', 'max-width: 1px');
+			}
 		}
 
-		if (this.cachedId && this.cachedId !== this.id) {
-			this.element.classList.remove(this.cachedId);
-		}
+		const css = this.getCSS(styles);
 
-		if (cached) {
-			if (cached.id !== this.id) {
-				this.element.classList.add(cached.id);
-			}
-
-			this.cachedId = cached.id;
-
-			document.head.removeChild(this.globalStyle);
-		} else {
-			const generated = this.getCSS(styles);
-			this.globalStyle.textContent = generated;
-
-			if (!Array.from(document.head.childNodes).includes(this.globalStyle)) {
-				document.head.appendChild(this.globalStyle);
-			}
-
-			cache.set(css, {
-				css: generated,
-				id: this.id
-			});
+		if (this.latestCSS !== css) {
+			this.latestCSS = css;
+			this.globalStyle.textContent = css;
 		}
 	}
 
