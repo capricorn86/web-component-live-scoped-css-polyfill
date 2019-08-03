@@ -61,7 +61,7 @@ require('web-component-live-scoped-css-polyfill');
 
 ```html
 <script>
-    window.liveScopedCSS = {
+    window.liveScopedCSSPolyfill = {
         // Name of the render method that is called on each render
         renderMethod: null,
 

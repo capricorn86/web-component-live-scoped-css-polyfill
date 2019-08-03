@@ -21,7 +21,7 @@
 	],
 	"scripts": {
 		"compile": "tsc && webpack ./lib/index.js -o ./lib/live-scoped-css-polyfill.min.js",
-		"watch": "tsc -w",
+		"watch": "tsc -w --preserveWatchOutput",
 		"lint": "eslint --max-warnings 0 --fix './src/**/*.ts'"
 	},
 	"devDependencies": {
