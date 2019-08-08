@@ -3,8 +3,6 @@ When I started to use Web Components I discovered that the [polyfills](https://g
 
 This polyfill provide with an alternative to [@webcomponents/shadycss](https://github.com/webcomponents/polyfills/tree/master/packages/shadycss) that will add support for dynamically scoped CSS.
 
-This library is small and it does not extend ShadyCSS.
-
 If you are using a standard library it will not require any manual setup. If you are using custom elements standalone, please read about "renderMethod" in the "Configuration" section.
 
 
