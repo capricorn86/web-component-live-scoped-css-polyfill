@@ -12,7 +12,7 @@ const originalDefine = window.customElements.define;
 
 window.customElements.define = function(name, componentClass) {
 	const renderMethod = window['liveScopedCSSPolyfill'].renderMethod;
-	const disableRenderMethod = window['liveScopedCSSPolyfill'].disableRenderMethod === true;
+	const onlyScopeOnConnected = window['liveScopedCSSPolyfill'].onlyScopeOnConnected === true;
 	const renderMethods = renderMethod !== 'auto' ? [renderMethod] : libraryRenderMethods;
 	const originalConnectedCallback = componentClass.prototype.connectedCallback;
 	const originalDisconnectedCallback = componentClass.prototype.disconnectedCallback;
@@ -20,7 +20,7 @@ window.customElements.define = function(name, componentClass) {
 	const originalObservedAttributes = componentClass['observedAttributes'];
 	let isObservingClass = true;
 
-	if (!disableRenderMethod) {
+	if (!onlyScopeOnConnected) {
 		for (const renderMethod of renderMethods) {
 			if (componentClass.prototype[renderMethod]) {
 				const originalRender = componentClass.prototype[renderMethod];
@@ -49,9 +49,11 @@ window.customElements.define = function(name, componentClass) {
 	componentClass.prototype.connectedCallback = function() {
 		this.__xPathCSSGenerator = new XPathCSSGenerator(this);
 		this.__xPathCSSGenerator.connect();
-
 		if (originalConnectedCallback) {
 			originalConnectedCallback.call(this);
+		}
+		if (onlyScopeOnConnected) {
+			this.__xPathCSSGenerator.update();
 		}
 	};
 

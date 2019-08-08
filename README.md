@@ -1,9 +1,9 @@
 # Live scoped CSS polyfill for Web Components
-When I started to use Web Components I discovered that the [polyfills](https://github.com/webcomponents) provided by the [Polymer team](https://github.com/webcomponents) works great except for some problems I got with the ShadyCSS polyfill. The ShadyCSS polyfill requires some manual work to get it up and running and it does not support the dynamically changed styles.
+When I started to use Web Components I discovered that the [polyfills](https://github.com/webcomponents) provided by the [Polymer team](https://github.com/webcomponents) works great except for some problems I got with the ShadyCSS polyfill. The ShadyCSS polyfill requires some manual work to get it up and running and it does not support dynamically changed styles.
 
 This polyfill provide with an alternative to [@webcomponents/shadycss](https://github.com/webcomponents/polyfills/tree/master/packages/shadycss) that will add support for dynamically scoped CSS.
 
-This library is very small and it does not extend ShadyCSS. The CSS rendering is completely synchronous, as asynchronous rendering could break functionality unexpectedly.
+This library is small and it does not extend ShadyCSS.
 
 If you are using a standard library it will not require any manual setup. If you are using custom elements standalone, please read about "renderMethod" in the "Configuration" section.
 
@@ -19,7 +19,7 @@ npm install web-component-live-scoped-css-polyfill
 ### All recommended polyfills
 
 ```bash
-npm install core-js @webcomponents/webcomponents-platform @webcomponents/custom-elements @webcomponents/shadydom @webcomponents/template web-component-live-scoped-css-polyfill
+npm install core-js @webcomponents/webcomponents-platform @webcomponents/custom-elements @webcomponents/shadydom @webcomponents/template web-component-slotchange-polyfill web-component-live-scoped-css-polyfill
 ```
 
 
@@ -51,6 +51,7 @@ require('@webcomponents/webcomponents-platform');
 require('@webcomponents/custom-elements/custom-elements.min');
 require('@webcomponents/shadydom');
 require('@webcomponents/template');
+require('web-component-slotchange-polyfill');
 require('web-component-live-scoped-css-polyfill');
 ```
 
@@ -63,7 +64,10 @@ require('web-component-live-scoped-css-polyfill');
 <script>
     window.liveScopedCSSPolyfill = {
         // Name of the render method that is called on each render
-        renderMethod: null,
+        renderMethod: 'auto',
+        
+        // Set to "true" if the style is not changed during render
+        onlyScopeOnConnected: false,
 
         // Forces the polyfill to be loaded
         force: false
@@ -74,10 +78,11 @@ require('web-component-live-scoped-css-polyfill');
 
 ### Options
 
-| Name         | Type    | Default | Description                                                  |
-| ------------ | ------- | ------- | ------------------------------------------------------------ |
-| renderMethod | string  | null    | Name of the render method that is called on each render. This will be determined automatically by default (depending on which library you are using). |
-| force        | boolean | false   | Forces the polyfill to be loaded even if the browser has native support. |
+| Name                 | Type    | Default | Description                                                  |
+| -------------------- | ------- | ------- | ------------------------------------------------------------ |
+| renderMethod         | string  | auto    | Name of the render method that is called on each render. This will be determined automatically by default (depending on which library you are using). |
+| onlyScopeOnConnected | boolean | false   | If this is set to "true", the "renderMethod" behavior will be disabled and scoping will only happen after the element has been connected once. This will improve performance drastically for applications not changing style during render. |
+| force                | boolean | false   | Forces the polyfill to be loaded even if the browser has native support. |
 
 ### Supported libraries
 
@@ -95,6 +100,17 @@ require('web-component-live-scoped-css-polyfill');
 Only ":host" and normal CSS selectors are supported at the moment.
 
 If you have a need for a missing feature, please let me know, and I will do my best to add it.
+
+
+
+# Release Notes
+
+| Version | Date       | Description     |
+| ------- | ---------- | --------------- |
+| 1.0.0   | 2019-08-08 | Stable release. |
+| 0.0.1   | 2019-07-30 | Alpha release.  |
+
+
 
 # How to Develop
 
@@ -114,5 +130,27 @@ npm run compile
 
 ```bash
 npm run watch
+```
+
+### Debugging
+
+It is possible to debug in Chrome or Firefox by forcing all polyfills to be enabled.
+
+```html
+<script>
+    if (window.customElements) {
+        window.customElements['forcePolyfill'] = true;
+    }
+    window['ShadyDOM'] = {
+        force: true
+    };
+    window.slotChangePolyfill = {
+        force: true
+    };
+    window.liveScopedCSSPolyfill = {
+        force: true
+    };
+</script>
+<script src="all-polyfills.js"></script>
 ```
 
