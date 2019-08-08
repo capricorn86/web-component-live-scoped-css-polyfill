@@ -38,27 +38,18 @@ export default class XPathCSSGenerator {
 
 	/**
 	 * Updates the global style.
+	 *
+	 * @param {boolean} [disableStyles=true] Set to "false" to not disabling styles.
 	 */
-	public update(): void {
+	public update(disableStyles: boolean = true): void {
 		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
 
-		for (const style of styles) {
-			if (!style.hasAttribute('media')) {
-				style.setAttribute('media', 'max-width: 1px');
-
-				if (!style['__originalRemoveAttribute']) {
-					style['__originalRemoveAttribute'] = style.removeAttribute;
-					style.removeAttribute = function(name) {
-						if (name !== 'media') {
-							this['__originalRemoveAttribute'].call(this, name);
-						}
-					};
-				}
-			}
+		if (disableStyles) {
+			this.disableStyles(styles);
 		}
 
-		let css = this.getCSS(styles);
+		const css = styles.map(style => this.getScopedCSS(style.textContent)).join('\n');
 
 		if (css && this.latestCSS !== css) {
 			const cached = cache.get(css);
@@ -97,39 +88,37 @@ export default class XPathCSSGenerator {
 	}
 
 	/**
-	 * Scopes CSS.
+	 * Scopes CSS and returns it.
 	 *
-	 * @param {HTMLStyleElement} styles Styles.
-	 * @return {string} Generated CSS.
+	 * @param {string} css CSS code to scope.
+	 * @return {string} Scoped CSS.
 	 */
-	private getCSS(styles: HTMLStyleElement[]): string {
+	private getScopedCSS(css: string): string {
 		const scoped: string[] = [];
 		const animationNames = [];
 
-		for (const style of styles) {
-			for (const rule of CSSRuleParser.parse(style.textContent)) {
-				if (rule instanceof KeyframeCSSRule) {
-					animationNames.push(rule.animationName);
-					scoped.push(rule.selector + rule.css);
-				} else if (rule.children.length > 0) {
-					scoped.push(`
+		for (const rule of CSSRuleParser.parse(css)) {
+			if (rule instanceof KeyframeCSSRule) {
+				animationNames.push(rule.animationName);
+				scoped.push(rule.selector + rule.css);
+			} else if (rule.children.length > 0) {
+				scoped.push(`
 						${rule.selector}{
-							${rule.children.map(child => this.scopeRule(child)).join('\n')}
+							${rule.children.map(child => this.getScopedRule(child)).join('\n')}
 						}
 					`);
-				} else {
-					scoped.push(this.scopeRule(rule));
-				}
+			} else {
+				scoped.push(this.getScopedRule(rule));
 			}
 		}
 
-		let css = scoped.join('\n');
+		let scopedCSS = scoped.join('\n');
 
 		for (const name of animationNames) {
-			css = css.replace(new RegExp(name, 'gm'), name + '-' + ID_PLACEHOLDER);
+			scopedCSS = scopedCSS.replace(new RegExp(name, 'gm'), name + '-' + ID_PLACEHOLDER);
 		}
 
-		return scoped.join('\n');
+		return scopedCSS;
 	}
 
 	/**
@@ -137,7 +126,7 @@ export default class XPathCSSGenerator {
 	 * @param {CSSStyleRule} rule Rule.
 	 * @return {string} CSS.
 	 */
-	private scopeRule(rule: CSSRule): string {
+	private getScopedRule(rule: CSSRule): string {
 		const baseSelector = this.element.tagName.toLowerCase() + '.' + ID_PLACEHOLDER;
 		let selectors = [];
 
@@ -291,6 +280,28 @@ export default class XPathCSSGenerator {
 		}
 
 		return selector;
+	}
+
+	/**
+	 * Disables styles.
+	 *
+	 * @param {HTMLStyleElement[]} styles Styles.
+	 */
+	private disableStyles(styles: HTMLStyleElement[]): void {
+		for (const style of styles) {
+			if (!style.hasAttribute('media')) {
+				style.setAttribute('media', 'max-width: 1px');
+
+				if (!style['__originalRemoveAttribute']) {
+					style['__originalRemoveAttribute'] = style.removeAttribute;
+					style.removeAttribute = function(name) {
+						if (name !== 'media') {
+							this['__originalRemoveAttribute'].call(this, name);
+						}
+					};
+				}
+			}
+		}
 	}
 
 	/**

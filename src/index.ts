@@ -8,7 +8,7 @@ if (
 	window.customElements['polyfillWrapFlushCallback'] ||
 	window['ShadyDOM'] ||
 	!window['HTMLElement'].prototype.attachShadow ||
-	window['liveScopedCSS'].force
+	window['liveScopedCSSPolyfill'].force
 ) {
 	require('./patch/LiveScopedCSSPatch');
 }
