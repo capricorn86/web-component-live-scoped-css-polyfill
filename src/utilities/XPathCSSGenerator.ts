@@ -194,9 +194,6 @@ export default class XPathCSSGenerator {
 
 		if (childSelector) {
 			const childSelectorElement = childSelector.replace(/\[.+\]/g, '').split(':')[0];
-			if (childSelector.includes('/*')) {
-				debugger;
-			}
 			const elements = Array.from(
 				baseElement.querySelectorAll(childSelectorElement ? childSelectorElement : childSelector)
 			);
