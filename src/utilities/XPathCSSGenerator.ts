@@ -156,7 +156,7 @@ export default class XPathCSSGenerator {
 			} else if (rule.parent instanceof KeyframeCSSRule) {
 				scoped += rule.selector + rule.css + '\n';
 			} else {
-				scoped += this.getScopedRule(rule) + '\n';
+				scoped += this.getScopedRule(rule, cache) + '\n';
 			}
 
 			hasParent = !!rule.parent;
@@ -270,7 +270,7 @@ export default class XPathCSSGenerator {
 							: '';
 					const newSelector = baseSelector + xPathSelector + ' > ' + childSelector;
 					if (nextSelectorText) {
-						selectors += this.getScopedCSSForElement(element, css, nextSelectorText, newSelector);
+						selectors += this.getScopedCSSForElement(element, css, nextSelectorText, newSelector, cache);
 					} else if (!selectors.includes(newSelector)) {
 						selectors += newSelector + css + '\n';
 					}
