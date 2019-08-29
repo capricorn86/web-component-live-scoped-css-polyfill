@@ -61,17 +61,20 @@ require('web-component-live-scoped-css-polyfill');
 ```html
 <script>
     window.liveScopedCSSPolyfill = {
-        // Name of the render method that is called on each render
+        // Name of the render method that is called on each render.
         renderMethod: 'auto',
         
-        // Set to "true" if the style is not changed during render
+        // Set to "true" if the style is not changed during render.
         onlyScopeOnConnected: false,
 
-        // Forces the polyfill to be loaded
+        // Forces the polyfill to be loaded.
         force: false,
 
-        // Rules to disable as a RegExp or string
-        disableRules: null
+        // Rules to disable as a RegExp or string.
+        disableRules: null,
+
+        // Set to "true" to enable debugging.
+        debug: false
     };
 </script>
 <script src="live-scoped-css-polyfill.min.js"></script>
@@ -85,6 +88,7 @@ require('web-component-live-scoped-css-polyfill');
 | onlyScopeOnConnected | boolean        | false   | If this is set to "true", the "renderMethod" behavior will be disabled and scoping will only happen after the element has been connected once. This will improve performance drastically for applications not changing style during render. |
 | force                | boolean        | false   | Forces the polyfill to be loaded even if the browser has native support. |
 | disableRules         | string\|RegExp | null    | Rules to disable as a RegExp or string. This could be useful for rules that can be applied globally instead. Example: "*, *:before, *:after" |
+| debug         | boolean | false    | Set to "true" to enable debugging. |
 
 ### Supported libraries
 
@@ -107,6 +111,7 @@ If you have a need for a missing feature, please let me know, and I will do my b
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
+| 1.1.2   | 2019-08-29 | Adds option for enabling debugging. |
 | 1.1.0   | 2019-08-29 | Major performance improvements and minor bug fixes. |
 | 1.0.0   | 2019-08-08 | Stable release.                                     |
 | 0.0.1   | 2019-07-30 | Alpha release.                                      |
@@ -140,9 +145,9 @@ It is possible to debug in Chrome or Firefox by forcing all polyfills to be enab
 ```html
 <script>
     if (window.customElements) {
-        window.customElements['forcePolyfill'] = true;
+        window.customElements.forcePolyfill = true;
     }
-    window['ShadyDOM'] = {
+    window.ShadyDOM = {
         force: true
     };
     window.slotChangePolyfill = {
