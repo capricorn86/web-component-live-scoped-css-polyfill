@@ -97,7 +97,7 @@ export default class XPathCSSGenerator {
 						if (scopedCached) {
 							if (this.debug) {
 								console.log(
-									'LiveScropedCSSPolyfill: Generated new CSS, but reused existing style element for "' +
+									'LiveScropedCSSPolyfill: Generated new CSS and reused existing style element for "' +
 										this.element.tagName.toLowerCase() +
 										'".',
 									this.element
