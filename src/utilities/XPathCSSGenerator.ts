@@ -19,6 +19,7 @@ export default class XPathCSSGenerator {
 	private element: HTMLElement;
 	private latestCacheKey: string = null;
 	private disableRules: RegExp | string;
+	private debug: boolean;
 
 	/**
 	 * Constructor.
@@ -26,16 +27,18 @@ export default class XPathCSSGenerator {
 	 * @param {HTMLElement} element Element.
 	 * @param {object} [options] Options.
 	 * @param {RegExp|string} [options.disableRules] Disable rules matching a certain RegExp.
-	 * @param {boolean} [options.useAttributesInCacheKey] Disable rules matching a certain RegExp.
+	 * @param {boolean} [options.debug] Set to "true" to enable debugging.
 	 */
 	constructor(
 		element: HTMLElement,
-		options: { disableRules: RegExp | string } = {
-			disableRules: null
+		options: { disableRules: RegExp | string; debug: boolean } = {
+			disableRules: null,
+			debug: false
 		}
 	) {
 		this.element = element;
 		this.disableRules = options.disableRules;
+		this.debug = options.debug;
 	}
 
 	/**
@@ -67,6 +70,11 @@ export default class XPathCSSGenerator {
 				if (cached !== undefined) {
 					if (this.id !== cached) {
 						this.element.classList.remove(this.id);
+						this.id = null;
+					}
+
+					if (this.debug) {
+						console.log('LiveScropedCSSPolyfill: Used cache for "' + this.element.tagName.toLowerCase() + '".');
 					}
 
 					if (cached !== '') {
@@ -80,28 +88,21 @@ export default class XPathCSSGenerator {
 					const css = styles.map(style => style.textContent).join('\n');
 					const scoped = css ? this.getScopedCSS(css) : null;
 
+					if (this.debug) {
+						console.log('LiveScropedCSSPolyfill: Generated new CSS for "' + this.element.tagName.toLowerCase() + '".');
+					}
+
 					if (scoped) {
-						const scopedCached = cache[scoped];
-						if (scopedCached) {
-							if (this.id !== scopedCached) {
-								this.element.classList.remove(this.id);
-								this.element.classList.add(scopedCached);
-							}
+						this.element.classList.remove(this.id);
+						this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
+						this.element.classList.add(this.id);
 
-							this.id = scopedCached;
-						} else {
-							this.element.classList.remove(this.id);
-							this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
-							this.element.classList.add(this.id);
+						cache[cacheKey] = this.id;
 
-							cache[cacheKey] = this.id;
-							cache[scopedCached] = this.id;
+						const newStyle = document.createElement('style');
 
-							const newStyle = document.createElement('style');
-
-							newStyle.textContent = scoped.replace(ID_REGEXP, this.id);
-							document.head.appendChild(newStyle);
-						}
+						newStyle.textContent = scoped.replace(ID_REGEXP, this.id);
+						document.head.appendChild(newStyle);
 					} else {
 						cache[cacheKey] = '';
 						this.element.classList.remove(this.id);

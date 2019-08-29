@@ -13,6 +13,7 @@ const originalDefine = window.customElements.define;
 window.customElements.define = function(name, componentClass) {
 	const renderMethod = window['liveScopedCSSPolyfill'].renderMethod;
 	const disableRules = window['liveScopedCSSPolyfill'].disableRules;
+	const debug = window['liveScopedCSSPolyfill'].debug;
 	const onlyScopeOnConnected = window['liveScopedCSSPolyfill'].onlyScopeOnConnected === true;
 	const renderMethods = renderMethod !== 'auto' ? [renderMethod] : libraryRenderMethods;
 	const originalConnectedCallback = componentClass.prototype.connectedCallback;
@@ -47,7 +48,7 @@ window.customElements.define = function(name, componentClass) {
 	};
 
 	componentClass.prototype.connectedCallback = function() {
-		this.__xPathCSSGenerator = new XPathCSSGenerator(this, { disableRules });
+		this.__xPathCSSGenerator = new XPathCSSGenerator(this, { disableRules, debug });
 		this.__xPathCSSGenerator.connect();
 		if (originalConnectedCallback) {
 			originalConnectedCallback.call(this);
