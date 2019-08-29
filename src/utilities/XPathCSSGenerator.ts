@@ -133,6 +133,7 @@ export default class XPathCSSGenerator {
 	private getScopedCSS(css: string): string {
 		const animationNames = [];
 		const parser = new CSSRuleParser(css, this.disableRules);
+		const cache = {};
 		let hasParent = false;
 		let scoped = '';
 		let rule;
@@ -177,7 +178,7 @@ export default class XPathCSSGenerator {
 	 * @param {object} cache cache.
 	 * @return {string} CSS.
 	 */
-	private getScopedRule(rule: CSSRule): string {
+	private getScopedRule(rule: CSSRule, cache: { [k: string]: Element[] }): string {
 		const baseSelector = this.element.tagName.toLowerCase() + '.' + ID_PLACEHOLDER;
 		let selectors = '';
 		let css = rule.css;
@@ -210,7 +211,7 @@ export default class XPathCSSGenerator {
 					selectorText += selectorTexts.splice(i + 1, 1).join('');
 					max--;
 				}
-				selectors += this.getScopedCSSForElement(this.element, css, selectorText, baseSelector);
+				selectors += this.getScopedCSSForElement(this.element, css, selectorText, baseSelector, cache);
 			}
 		}
 
@@ -221,6 +222,7 @@ export default class XPathCSSGenerator {
 	 * Returns XPath elements from a selector.
 	 *
 	 * @param {Element|ShadowRoot} baseElement Parent.
+	 * @param {string} css CSS.
 	 * @param {string} selectorText Selector text.
 	 * @param {string} baseSelector Previous selector.
 	 * @param {object} cache cache.
@@ -230,7 +232,8 @@ export default class XPathCSSGenerator {
 		baseElement: Element | ShadowRoot,
 		css: string,
 		selectorText: string,
-		baseSelector: string
+		baseSelector: string,
+		cache: { [k: string]: Element[] }
 	): string {
 		const childSelectors = selectorText.replace(/ *> */g, '>').split(' ');
 		const childSelector = childSelectors.shift();
@@ -243,9 +246,11 @@ export default class XPathCSSGenerator {
 		if (childSelector && !childSelector.startsWith('@')) {
 			const childSelectorElement = childSelector.replace(/\[.+\]/g, '').split(':')[0];
 			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
-
-			const elements: Element[] = Array.from(baseElement.querySelectorAll(elementSelector));
+			const cached = baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
+			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
 			const nextSelectorText = childSelectors.join(' ').trim();
+
+			cache[elementSelector] = elements;
 
 			for (let element of elements) {
 				for (let i = 0, max = childSelector.split('>').length - 1; i < max; i++) {
