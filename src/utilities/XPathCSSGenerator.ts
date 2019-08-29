@@ -250,7 +250,9 @@ export default class XPathCSSGenerator {
 			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
 			const nextSelectorText = childSelectors.join(' ').trim();
 
-			cache[elementSelector] = elements;
+			if (baseElement === this.element['shadowRoot']) {
+				cache[elementSelector] = elements;
+			}
 
 			for (let element of elements) {
 				for (let i = 0, max = childSelector.split('>').length - 1; i < max; i++) {
