@@ -47,7 +47,7 @@ window.customElements.define = function(name, componentClass) {
 	};
 
 	componentClass.prototype.connectedCallback = function() {
-		this.__xPathCSSGenerator = new XPathCSSGenerator(this, disableRules);
+		this.__xPathCSSGenerator = new XPathCSSGenerator(this, { disableRules });
 		this.__xPathCSSGenerator.connect();
 		if (originalConnectedCallback) {
 			originalConnectedCallback.call(this);

@@ -68,7 +68,10 @@ require('web-component-live-scoped-css-polyfill');
         onlyScopeOnConnected: false,
 
         // Forces the polyfill to be loaded
-        force: false
+        force: false,
+
+        // Rules to disable as a RegExp or string
+        disableRules: null
     };
 </script>
 <script src="live-scoped-css-polyfill.min.js"></script>
@@ -76,11 +79,12 @@ require('web-component-live-scoped-css-polyfill');
 
 ### Options
 
-| Name                 | Type    | Default | Description                                                  |
-| -------------------- | ------- | ------- | ------------------------------------------------------------ |
-| renderMethod         | string  | auto    | Name of the render method that is called on each render. This will be determined automatically by default (depending on which library you are using). |
-| onlyScopeOnConnected | boolean | false   | If this is set to "true", the "renderMethod" behavior will be disabled and scoping will only happen after the element has been connected once. This will improve performance drastically for applications not changing style during render. |
-| force                | boolean | false   | Forces the polyfill to be loaded even if the browser has native support. |
+| Name                 | Type           | Default | Description                                                  |
+| -------------------- | -------------- | ------- | ------------------------------------------------------------ |
+| renderMethod         | string         | auto    | Name of the render method that is called on each render. This will be determined automatically by default (depending on which library you are using). |
+| onlyScopeOnConnected | boolean        | false   | If this is set to "true", the "renderMethod" behavior will be disabled and scoping will only happen after the element has been connected once. This will improve performance drastically for applications not changing style during render. |
+| force                | boolean        | false   | Forces the polyfill to be loaded even if the browser has native support. |
+| disableRules         | string\|RegExp | null    | Rules to disable as a RegExp or string. This could be useful for rules that can be applied globally instead. Example: "*, *:before, *:after" |
 
 ### Supported libraries
 
@@ -99,14 +103,13 @@ Only ":host" and normal CSS selectors are supported at the moment.
 
 If you have a need for a missing feature, please let me know, and I will do my best to add it.
 
-
-
 # Release Notes
 
-| Version | Date       | Description     |
-| ------- | ---------- | --------------- |
-| 1.0.0   | 2019-08-08 | Stable release. |
-| 0.0.1   | 2019-07-30 | Alpha release.  |
+| Version | Date       | Description                                         |
+| ------- | ---------- | --------------------------------------------------- |
+| 1.1.0   | 2019-08-29 | Major performance improvements and minor bug fixes. |
+| 1.0.0   | 2019-08-08 | Stable release.                                     |
+| 0.0.1   | 2019-07-30 | Alpha release.                                      |
 
 
 

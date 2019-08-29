@@ -18,16 +18,24 @@ export default class XPathCSSGenerator {
 	public id: string;
 	private element: HTMLElement;
 	private latestCacheKey: string = null;
-	private disableRules: RegExp = null;
+	private disableRules: RegExp | string;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param {RegExp} [disableRules] Disable rules matching a certain RegExp.
+	 * @param {HTMLElement} element Element.
+	 * @param {object} [options] Options.
+	 * @param {RegExp|string} [options.disableRules] Disable rules matching a certain RegExp.
+	 * @param {boolean} [options.useAttributesInCacheKey] Disable rules matching a certain RegExp.
 	 */
-	constructor(element: HTMLElement, disableRules: RegExp = null) {
+	constructor(
+		element: HTMLElement,
+		options: { disableRules: RegExp | string } = {
+			disableRules: null
+		}
+	) {
 		this.element = element;
-		this.disableRules = disableRules;
+		this.disableRules = options.disableRules;
 	}
 
 	/**
@@ -48,7 +56,7 @@ export default class XPathCSSGenerator {
 	public update(): void {
 		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
-		const cacheKey = this.element.shadowRoot.innerHTML.replace(/\s/gm, '');
+		const cacheKey = this.getCacheKey(this.element);
 
 		this.disableStyles(styles);
 
@@ -62,11 +70,11 @@ export default class XPathCSSGenerator {
 					}
 
 					if (cached !== '') {
-						this.id = cached;
-
-						if (!this.element.classList.contains(this.id)) {
-							this.element.classList.add(this.id);
+						if (this.id !== cached) {
+							this.element.classList.add(cached);
 						}
+
+						this.id = cached;
 					}
 				} else {
 					const css = styles.map(style => style.textContent).join('\n');
@@ -77,13 +85,10 @@ export default class XPathCSSGenerator {
 						if (scopedCached) {
 							if (this.id !== scopedCached) {
 								this.element.classList.remove(this.id);
+								this.element.classList.add(scopedCached);
 							}
 
 							this.id = scopedCached;
-
-							if (!this.element.classList.contains(this.id)) {
-								this.element.classList.add(this.id);
-							}
 						} else {
 							this.element.classList.remove(this.id);
 							this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
@@ -343,6 +348,30 @@ export default class XPathCSSGenerator {
 			}
 		}
 		return '{\n' + important.join('\n') + '\n}';
+	}
+
+	/**
+	 * Returns a cache key.
+	 *
+	 * @param {ShadowRoot|Element} element Element.
+	 * @return {string} Cache key.
+	 */
+	private getCacheKey(element: Element): string {
+		const structureElement = element.shadowRoot || element;
+		let key = element.tagName;
+
+		if (structureElement.children) {
+			for (let i = 0, max = structureElement.children.length; i < max; i++) {
+				const child = structureElement.children[i];
+				if (child.tagName === 'STYLE') {
+					key += child.outerHTML;
+				} else if (child.tagName !== 'SLOT') {
+					key += this.getCacheKey(child);
+				}
+			}
+		}
+
+		return key;
 	}
 
 	/**
