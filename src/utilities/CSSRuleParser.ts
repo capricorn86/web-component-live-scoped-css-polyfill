@@ -6,42 +6,84 @@ import MediaCSSRule from './css-rules/MediaCSSRule';
  * Utility for scoping css by finding a unique path to it.
  */
 export default class CSSRuleParser {
+	private css: string;
+	private disableRules: RegExp | string;
+	private match: RegExpExecArray = null;
+	private regexp: RegExp = /{|}/gm;
+	private rootRule: CSSRule = new CSSRule();
+	private currentRule: CSSRule = this.rootRule;
+	private stack: CSSRule[] = [this.currentRule];
+	private isDisabled = false;
+	private lastIndex = 0;
+
 	/**
-	 * Parses CSS.
+	 * Constructor.
 	 *
 	 * @param {string} css CSS.
-	 * @return {CSSRule[]} CSS rules.
+	 * @param {RegExp} [disableRules] Disable rules matching a certain RegExp.
 	 */
-	public static parse(css: string): CSSRule[] {
-		const root = new CSSRule();
-		const regexp = /{|}/gm;
-		const stack = [root];
-		let currentRule = root;
-		let lastIndex = 0;
-		let match;
+	constructor(css: string, disableRules: RegExp | string = null) {
+		this.css = css.replace(/\/\*.*\*\//gm, '');
+		this.disableRules = disableRules;
+	}
 
-		css = css.replace(/\/\*.*\*\//gm, '');
+	/**
+	 * Next rule.
+	 *
+	 * @return {CSSRule} Rule.
+	 */
+	public next(): CSSRule {
+		let returnRule = null;
 
-		while ((match = regexp.exec(css))) {
-			if (match[0] === '{') {
-				const selector = css.substring(lastIndex, match.index).trim();
-				const newRule = this.createRule(selector, match.index);
-				currentRule.children.push(newRule);
-				currentRule = newRule;
-				stack.push(currentRule);
-			} else {
-				currentRule.endIndex = match.index + 1;
+		this.match = this.regexp.exec(this.css);
 
-				currentRule.css = css.substring(currentRule.startIndex, currentRule.endIndex).trim();
-
-				stack.pop();
-				currentRule = stack[stack.length - 1];
-			}
-
-			lastIndex = match.index + 1;
+		if (!this.match) {
+			return null;
 		}
 
-		return root.children;
+		if (this.match[0] === '{') {
+			const selector = this.css.substring(this.lastIndex, this.match.index).trim();
+			this.isDisabled =
+				this.disableRules &&
+				((typeof this.disableRules === 'string' && selector.includes(this.disableRules)) ||
+					(this.disableRules instanceof RegExp && this.disableRules.test(selector)));
+
+			if (!this.isDisabled) {
+				const newRule = this.createRule(selector, this.match.index);
+
+				if (this.currentRule !== this.rootRule) {
+					newRule.parent = this.currentRule;
+					if (!this.currentRule.hasChildren) {
+						returnRule = this.currentRule;
+						returnRule.endIndex = this.match.index + 1;
+						returnRule.hasChildren = true;
+					}
+				}
+
+				this.currentRule = newRule;
+				this.stack.push(this.currentRule);
+			}
+		} else if (!this.isDisabled) {
+			if (!this.currentRule.hasChildren) {
+				returnRule = this.currentRule;
+
+				this.currentRule.endIndex = this.match.index + 1;
+				this.currentRule.css = this.css.substring(this.currentRule.startIndex, this.currentRule.endIndex).trim();
+			}
+
+			this.stack.pop();
+			this.currentRule = this.stack[this.stack.length - 1];
+		}
+
+		this.lastIndex = this.match.index + 1;
+
+		if (returnRule) {
+			return returnRule;
+		} else if (this.currentRule) {
+			return this.next();
+		}
+
+		return null;
 	}
 
 	/**
@@ -51,7 +93,7 @@ export default class CSSRuleParser {
 	 * @param {number} startIndex Start index.
 	 * @return {CSSRule} CSS rule.
 	 */
-	public static createRule(selector: string, startIndex: number): CSSRule {
+	public createRule(selector: string, startIndex: number): CSSRule {
 		let rule = null;
 		if (selector.startsWith('@keyframes')) {
 			rule = new KeyframeCSSRule();

@@ -1,6 +1,6 @@
 window['liveScopedCSSPolyfill'] = Object.assign(
 	{},
-	{ force: false, renderMethod: 'auto', onlyScopeOnConnected: false },
+	{ force: false, renderMethod: 'auto', onlyScopeOnConnected: false, disableRules: null },
 	window['liveScopedCSSPolyfill']
 );
 

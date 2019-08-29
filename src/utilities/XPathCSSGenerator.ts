@@ -1,6 +1,8 @@
 import CSSRuleParser from './CSSRuleParser';
 import CSSRule from './css-rules/CSSRule';
 import KeyframeCSSRule from './css-rules/KeyframeCSSRule';
+import MediaCSSRule from './css-rules/MediaCSSRule';
+// import RenderQueue from './RenderQueue';
 
 const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const ID_PLACEHOLDER = 'ID_PLACEHOLDER';
@@ -12,16 +14,20 @@ const HOST_PRERULE_REGEXP = /\(([^)]*)\)/;
  */
 export default class XPathCSSGenerator {
 	private static index = 0;
-	private static cache: Map<string, string> = new Map();
+	private static cache: { [k: string]: string } = {};
 	public id: string;
 	private element: HTMLElement;
-	private latestCSS: string = null;
+	private latestCacheKey: string = null;
+	private disableRules: RegExp = null;
 
 	/**
 	 * Constructor.
+	 *
+	 * @param {RegExp} [disableRules] Disable rules matching a certain RegExp.
 	 */
-	constructor(element: HTMLElement) {
+	constructor(element: HTMLElement, disableRules: RegExp = null) {
 		this.element = element;
+		this.disableRules = disableRules;
 	}
 
 	/**
@@ -38,53 +44,72 @@ export default class XPathCSSGenerator {
 
 	/**
 	 * Updates the global style.
-	 *
-	 * @param {boolean} [disableStyles=true] Set to "false" to not disabling styles.
 	 */
-	public update(disableStyles: boolean = true): void {
+	public update(): void {
 		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
+		const cacheKey = this.element.shadowRoot.innerHTML.replace(/\s/gm, '');
 
-		if (disableStyles) {
-			this.disableStyles(styles);
-		}
+		this.disableStyles(styles);
 
-		const css = styles.map(style => this.getScopedCSS(style.textContent)).join('\n');
-
-		if (css && this.latestCSS !== css) {
-			const cached = cache.get(css);
+		if (cacheKey && this.latestCacheKey !== cacheKey) {
+			const cached = cache[cacheKey];
 
 			if (!cached || cached !== this.id) {
-				this.element.classList.remove(this.id);
+				if (cached !== undefined) {
+					if (this.id !== cached) {
+						this.element.classList.remove(this.id);
+					}
 
-				if (cached) {
-					this.id = cached;
+					if (cached !== '') {
+						this.id = cached;
 
-					if (!this.element.classList.contains(this.id)) {
-						this.element.classList.add(this.id);
+						if (!this.element.classList.contains(this.id)) {
+							this.element.classList.add(this.id);
+						}
 					}
 				} else {
-					this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
+					const css = styles.map(style => style.textContent).join('\n');
+					const scoped = css ? this.getScopedCSS(css) : null;
 
-					if (!this.element.classList.contains(this.id)) {
-						this.element.classList.add(this.id);
+					if (scoped) {
+						const scopedCached = cache[scoped];
+						if (scopedCached) {
+							if (this.id !== scopedCached) {
+								this.element.classList.remove(this.id);
+							}
+
+							this.id = scopedCached;
+
+							if (!this.element.classList.contains(this.id)) {
+								this.element.classList.add(this.id);
+							}
+						} else {
+							this.element.classList.remove(this.id);
+							this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
+							this.element.classList.add(this.id);
+
+							cache[cacheKey] = this.id;
+							cache[scopedCached] = this.id;
+
+							const newStyle = document.createElement('style');
+
+							newStyle.textContent = scoped.replace(ID_REGEXP, this.id);
+							document.head.appendChild(newStyle);
+						}
+					} else {
+						cache[cacheKey] = '';
+						this.element.classList.remove(this.id);
+						this.id = null;
 					}
-
-					cache.set(css, this.id);
-
-					const scopedCSS = css.replace(ID_REGEXP, this.id);
-					const newStyle = document.createElement('style');
-
-					newStyle.textContent = scopedCSS;
-					document.head.appendChild(newStyle);
 				}
 			}
-		} else if (!css) {
+		} else if (!cacheKey) {
 			this.element.classList.remove(this.id);
 			this.id = null;
 		}
 
-		this.latestCSS = css;
+		this.latestCacheKey = cacheKey;
 	}
 
 	/**
@@ -94,81 +119,90 @@ export default class XPathCSSGenerator {
 	 * @return {string} Scoped CSS.
 	 */
 	private getScopedCSS(css: string): string {
-		const scoped: string[] = [];
 		const animationNames = [];
+		const parser = new CSSRuleParser(css, this.disableRules);
+		let hasParent = false;
+		let scoped = '';
+		let rule;
 
-		for (const rule of CSSRuleParser.parse(css)) {
-			if (rule instanceof KeyframeCSSRule) {
-				animationNames.push(rule.animationName);
-				scoped.push(rule.selector + rule.css);
-			} else if (rule.children.length > 0) {
-				scoped.push(`
-						${rule.selector}{
-							${rule.children.map(child => this.getScopedRule(child)).join('\n')}
-						}
-					`);
-			} else {
-				scoped.push(this.getScopedRule(rule));
+		while ((rule = parser.next())) {
+			if (hasParent && !rule.parent) {
+				scoped += '}\n';
 			}
-		}
 
-		let scopedCSS = scoped.join('\n');
+			if (rule instanceof KeyframeCSSRule) {
+				const newName = rule.animationName + '-' + ID_PLACEHOLDER;
+
+				if (!animationNames.includes(rule.animationName)) {
+					animationNames.push(rule.animationName);
+				}
+
+				scoped += rule.selector.replace(rule.animationName, newName) + ' {\n';
+			} else if (rule instanceof MediaCSSRule) {
+				scoped += rule.selector + '{\n';
+			} else if (rule.parent instanceof KeyframeCSSRule) {
+				scoped += rule.selector + rule.css + '\n';
+			} else {
+				scoped += this.getScopedRule(rule) + '\n';
+			}
+
+			hasParent = !!rule.parent;
+		}
 
 		for (const name of animationNames) {
-			scopedCSS = scopedCSS.replace(new RegExp(name, 'gm'), name + '-' + ID_PLACEHOLDER);
+			scoped = scoped.replace(
+				new RegExp('animation-name[ ]*:[ ]*' + name, 'gm'),
+				'animation-name: ' + name + '-' + ID_PLACEHOLDER
+			);
 		}
 
-		return scopedCSS;
+		return scoped;
 	}
 
 	/**
 	 * Scopes a rule.
 	 * @param {CSSStyleRule} rule Rule.
+	 * @param {object} cache cache.
 	 * @return {string} CSS.
 	 */
 	private getScopedRule(rule: CSSRule): string {
 		const baseSelector = this.element.tagName.toLowerCase() + '.' + ID_PLACEHOLDER;
-		let selectors = [];
+		let selectors = '';
+		let css = rule.css;
 
-		if (rule.selector.startsWith(':host')) {
-			if (rule.selector.includes('::slotted')) {
-				console.warn(
-					'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored'
-				);
+		const selectorTexts = rule.selector.split(',');
+
+		for (let i = 0, max = selectorTexts.length; i < max; i++) {
+			let selectorText = selectorTexts[i].trim();
+
+			if (selectorText.startsWith(':host')) {
+				if (rule.selector.includes('::slotted')) {
+					console.warn(
+						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
+					);
+				} else {
+					let dirSelector = '';
+
+					if (selectorText.includes(':dir')) {
+						const match = selectorText.match(HOST_PRERULE_REGEXP);
+						if (match && match[1]) {
+							dirSelector = '[dir="' + match[1] + '"] ';
+						}
+					}
+
+					css = this.makeCSSImportant(css);
+					selectors += dirSelector + baseSelector + ' ' + css + '\n';
+				}
 			} else {
-				const hostSelectors = rule.selector.split(',');
-				const hostParts = hostSelectors.shift().split('(');
-				let hostRule = hostParts[1] || '';
-				if (hostRule.includes(':dir')) {
-					const match = hostRule.match(HOST_PRERULE_REGEXP);
-					if (match && match[1]) {
-						hostRule = '[dir="' + match[1] + '"] ';
-					}
-				}
-				selectors.push(hostRule + baseSelector);
-				if (hostSelectors.length > 0) {
-					for (let i = 0, max = hostSelectors.length; i < max; i++) {
-						selectors = selectors.concat(
-							this.getXPathSelectorsFromSelectorText(this.element, hostSelectors[i].trim(), baseSelector)
-						);
-					}
-				}
-			}
-		} else {
-			const selectorTexts = rule.selector.split(',');
-			for (let i = 0, max = selectorTexts.length; i < max; i++) {
-				let selectorText = selectorTexts[i];
 				if (selectorText.includes('(') && !selectorText.includes(')') && i < max - 1) {
 					selectorText += selectorTexts.splice(i + 1, 1).join('');
 					max--;
 				}
-				selectors = selectors.concat(
-					this.getXPathSelectorsFromSelectorText(this.element, selectorText.trim(), baseSelector)
-				);
+				selectors += this.getScopedCSSForElement(this.element, css, selectorText, baseSelector);
 			}
 		}
 
-		return selectors.map(selector => selector + ' ' + rule.css).join('\n');
+		return selectors;
 	}
 
 	/**
@@ -177,26 +211,28 @@ export default class XPathCSSGenerator {
 	 * @param {Element|ShadowRoot} baseElement Parent.
 	 * @param {string} selectorText Selector text.
 	 * @param {string} baseSelector Previous selector.
+	 * @param {object} cache cache.
 	 * @return {string} XPath selector.
 	 */
-	private getXPathSelectorsFromSelectorText(
+	private getScopedCSSForElement(
 		baseElement: Element | ShadowRoot,
+		css: string,
 		selectorText: string,
-		baseSelector: string = null
-	): string[] {
+		baseSelector: string
+	): string {
 		const childSelectors = selectorText.replace(/ *> */g, '>').split(' ');
 		const childSelector = childSelectors.shift();
-		let selectors = [];
+		let selectors = '';
 
 		if (baseElement['shadowRoot']) {
 			baseElement = baseElement['shadowRoot'];
 		}
 
-		if (childSelector) {
+		if (childSelector && !childSelector.startsWith('@')) {
 			const childSelectorElement = childSelector.replace(/\[.+\]/g, '').split(':')[0];
-			const elements = Array.from(
-				baseElement.querySelectorAll(childSelectorElement ? childSelectorElement : childSelector)
-			);
+			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
+
+			const elements: Element[] = Array.from(baseElement.querySelectorAll(elementSelector));
 			const nextSelectorText = childSelectors.join(' ').trim();
 
 			for (let element of elements) {
@@ -205,12 +241,11 @@ export default class XPathCSSGenerator {
 						element = <Element>element.parentNode;
 					}
 				}
+
 				if (childSelector === '*') {
 					const xPathSelector = element !== baseElement ? ' > ' + this.getXPathSelector(element, baseElement) : '';
 					const newSelector = baseSelector + xPathSelector;
-					if (!selectors.includes(newSelector)) {
-						selectors.push(newSelector);
-					}
+					selectors += newSelector + css + '\n';
 				} else {
 					const xPathSelector =
 						element.parentNode !== baseElement
@@ -218,13 +253,9 @@ export default class XPathCSSGenerator {
 							: '';
 					const newSelector = baseSelector + xPathSelector + ' > ' + childSelector;
 					if (nextSelectorText) {
-						for (const selector of this.getXPathSelectorsFromSelectorText(element, nextSelectorText, newSelector)) {
-							if (!selectors.includes(selector)) {
-								selectors.push(selector);
-							}
-						}
+						selectors += this.getScopedCSSForElement(element, css, nextSelectorText, newSelector);
 					} else if (!selectors.includes(newSelector)) {
-						selectors.push(newSelector);
+						selectors += newSelector + css + '\n';
 					}
 				}
 			}
@@ -248,32 +279,25 @@ export default class XPathCSSGenerator {
 		if (element.id) {
 			return element.id;
 		} else if (typeof element.className === 'string' && element.className && !element['shadowRoot']) {
-			selector =
-				'.' +
-				element.className
-					.replace(/ +/g, ' ')
-					.split(' ')
-					.join('.') +
-				nextSelector;
+			selector = '.' + Array.prototype.slice.apply(element.classList).join('.') + nextSelector;
 		} else {
 			selector = element.tagName.toLowerCase() + nextSelector;
 		}
 
 		if (element.parentNode && element.parentNode !== baseElement) {
 			const shadowRoot = element.parentNode['shadowRoot'];
-			let slotSelector = '';
+			let slotXPathSelector = '';
 			if (shadowRoot) {
 				const slotName = element.getAttribute('slot');
-				const slotElement = slotName
-					? shadowRoot.querySelector('slot[name="' + slotName + '"]')
-					: shadowRoot.querySelector('slot');
+				const slotSelector = slotName ? 'slot[name="' + slotName + '"]' : 'slot';
+				const slotElement = shadowRoot.querySelector(slotSelector);
 
 				if (slotElement && slotElement.parentNode !== shadowRoot) {
-					slotSelector = ' > ' + this.getXPathSelector(slotElement.parentNode, shadowRoot, nextSelector);
+					slotXPathSelector = ' > ' + this.getXPathSelector(slotElement.parentNode, shadowRoot, nextSelector);
 				}
 			}
 			const parentSelector = this.getXPathSelector(<HTMLElement>element.parentNode, baseElement, nextSelector);
-			selector = parentSelector + slotSelector + ' > ' + selector;
+			selector = parentSelector + slotXPathSelector + ' > ' + selector;
 		}
 
 		return selector;
@@ -299,6 +323,26 @@ export default class XPathCSSGenerator {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Makes CSS important.
+	 *
+	 * @param {string} css CSS.
+	 * @return {string} Important CSS.
+	 */
+	private makeCSSImportant(css: string): string {
+		const regexp = /[a-zA-Z-]+[ ]*:[ ]*[^;]+;/gm;
+		let important = [];
+		let match;
+		while ((match = regexp.exec(css))) {
+			if (!match[0].includes('!important')) {
+				important.push(match[0].replace(';', ' !important;'));
+			} else {
+				important.push(match[0]);
+			}
+		}
+		return '{\n' + important.join('\n') + '\n}';
 	}
 
 	/**

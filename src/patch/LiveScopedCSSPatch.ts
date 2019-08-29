@@ -12,13 +12,13 @@ const originalDefine = window.customElements.define;
 
 window.customElements.define = function(name, componentClass) {
 	const renderMethod = window['liveScopedCSSPolyfill'].renderMethod;
+	const disableRules = window['liveScopedCSSPolyfill'].disableRules;
 	const onlyScopeOnConnected = window['liveScopedCSSPolyfill'].onlyScopeOnConnected === true;
 	const renderMethods = renderMethod !== 'auto' ? [renderMethod] : libraryRenderMethods;
 	const originalConnectedCallback = componentClass.prototype.connectedCallback;
 	const originalDisconnectedCallback = componentClass.prototype.disconnectedCallback;
-	const originalAttributeChangedCallback = componentClass.prototype.attributeChangedCallback;
-	const originalObservedAttributes = componentClass['observedAttributes'];
-	let isObservingClass = true;
+	const originalSetAttribute = componentClass.prototype.setAttribute;
+	const originalRemoveAttribute = componentClass.prototype.removeAttribute;
 
 	if (!onlyScopeOnConnected) {
 		for (const renderMethod of renderMethods) {
@@ -47,7 +47,7 @@ window.customElements.define = function(name, componentClass) {
 	};
 
 	componentClass.prototype.connectedCallback = function() {
-		this.__xPathCSSGenerator = new XPathCSSGenerator(this);
+		this.__xPathCSSGenerator = new XPathCSSGenerator(this, disableRules);
 		this.__xPathCSSGenerator.connect();
 		if (originalConnectedCallback) {
 			originalConnectedCallback.call(this);
@@ -64,35 +64,21 @@ window.customElements.define = function(name, componentClass) {
 		}
 	};
 
-	componentClass.prototype.attributeChangedCallback = function(
-		attributeName: string,
-		oldValue: string,
-		newValue: string
-	) {
-		if (
-			this.__xPathCSSGenerator &&
-			this.__xPathCSSGenerator.id &&
-			attributeName === 'class' &&
-			(!newValue || !newValue.split(' ').includes(this.__xPathCSSGenerator.id))
-		) {
-			const classValue = newValue ? newValue.split(' ') : [];
-			this.setAttribute('class', [this.__xPathCSSGenerator.id].concat(classValue).join(' '));
+	componentClass.prototype.setAttribute = function(name: string, value: string) {
+		if (name === 'class' && this.__xPathCSSGenerator.id) {
+			const classes = value ? value.split(' ') : [];
+			if (!classes.includes(this.__xPathCSSGenerator.id)) {
+				value = classes.concat(this.__xPathCSSGenerator.id).join(' ');
+			}
 		}
-		if (originalAttributeChangedCallback && (isObservingClass || attributeName !== 'class')) {
-			originalAttributeChangedCallback.call(this, attributeName, oldValue, newValue);
-		}
+		originalSetAttribute.call(this, name, value);
 	};
 
-	Object.defineProperty(componentClass, 'observedAttributes', {
-		get: function() {
-			const observedAttributes = originalObservedAttributes ? originalObservedAttributes.slice() : [];
-			if (!observedAttributes.includes('class')) {
-				isObservingClass = false;
-				observedAttributes.push('class');
-			}
-			return observedAttributes;
+	componentClass.prototype.removeAttribute = function(name: string) {
+		if (name !== 'class') {
+			originalRemoveAttribute.call(this, name);
 		}
-	});
+	};
 
 	originalDefine.call(this, name, componentClass);
 };
