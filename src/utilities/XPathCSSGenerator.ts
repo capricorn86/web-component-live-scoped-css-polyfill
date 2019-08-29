@@ -91,45 +91,24 @@ export default class XPathCSSGenerator {
 					const css = styles.map(style => style.textContent).join('\n');
 					const scoped = css ? this.getScopedCSS(css) : null;
 
+					if (this.debug) {
+						console.log(
+							'LiveScropedCSSPolyfill: Generated new CSS for "' + this.element.tagName.toLowerCase() + '".',
+							this.element
+						);
+					}
+
 					if (scoped) {
-						const scopedCached = cache[scoped];
+						this.element.classList.remove(this.id);
+						this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
+						this.element.classList.add(this.id);
 
-						if (scopedCached) {
-							if (this.debug) {
-								console.log(
-									'LiveScropedCSSPolyfill: Generated new CSS and reused existing style element for "' +
-										this.element.tagName.toLowerCase() +
-										'".',
-									this.element
-								);
-							}
+						cache[cacheKey] = this.id;
 
-							if (this.id !== scopedCached) {
-								this.element.classList.remove(this.id);
-								this.element.classList.add(scopedCached);
-							}
+						const newStyle = document.createElement('style');
 
-							this.id = scopedCached;
-						} else {
-							if (this.debug) {
-								console.log(
-									'LiveScropedCSSPolyfill: Generated new CSS for "' + this.element.tagName.toLowerCase() + '".',
-									this.element
-								);
-							}
-
-							this.element.classList.remove(this.id);
-							this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
-							this.element.classList.add(this.id);
-
-							cache[cacheKey] = this.id;
-							cache[scopedCached] = this.id;
-
-							const newStyle = document.createElement('style');
-
-							newStyle.textContent = scoped.replace(ID_REGEXP, this.id);
-							document.head.appendChild(newStyle);
-						}
+						newStyle.textContent = scoped.replace(ID_REGEXP, this.id);
+						document.head.appendChild(newStyle);
 					} else {
 						cache[cacheKey] = '';
 						this.element.classList.remove(this.id);
