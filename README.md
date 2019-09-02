@@ -103,9 +103,9 @@ require('web-component-live-scoped-css-polyfill');
 
 
 # Known Limitations
-Only ":host" and normal CSS selectors are supported at the moment.
+"::slotted" is not supported at the moment.
 
-If you have a need for a missing feature, please let me know, and I will do my best to add it.
+If you have a need for a missing feature or if you have found a bug, please let me know, and I will do my best to fix it.
 
 # Release Notes
 
