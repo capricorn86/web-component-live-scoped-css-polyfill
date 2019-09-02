@@ -7,7 +7,6 @@ import MediaCSSRule from './css-rules/MediaCSSRule';
 const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const ID_PLACEHOLDER = 'ID_PLACEHOLDER';
 const ID_REGEXP = new RegExp(ID_PLACEHOLDER, 'gm');
-const HOST_PRERULE_REGEXP = /\(([^)]*)\)/;
 
 /**
  * Utility for scoping css by finding a unique path to it.
@@ -193,19 +192,16 @@ export default class XPathCSSGenerator {
 					console.warn(
 						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
 					);
-				} else {
-					let dirSelector = '';
-
-					if (selectorText.includes(':dir')) {
-						const match = selectorText.match(HOST_PRERULE_REGEXP);
-						if (match && match[1]) {
-							dirSelector = '[dir="' + match[1] + '"] ';
-						}
-					}
-
+				} else if(!selectorText.includes('(')) {
 					css = this.makeCSSImportant(css);
-					selectors += dirSelector + baseSelector + ' ' + css + '\n';
+					selectors += baseSelector + ' ' + css + '\n';
 				}
+			} else if (selectorText.startsWith(':host-context')) {
+				const selectorParts = selectorText.split(' ');
+				const elementSelector = selectorParts[1] || '';
+				const contextSelector = selectorParts[0].replace(':host-context(', '').replace(')', '');
+
+				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
 			} else {
 				if (selectorText.includes('(') && !selectorText.includes(')') && i < max - 1) {
 					selectorText += selectorTexts.splice(i + 1, 1).join('');
