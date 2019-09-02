@@ -162,10 +162,9 @@ export default class XPathCSSGenerator {
 		}
 
 		for (const name of animationNames) {
-			scoped = scoped.replace(
-				new RegExp('animation-name[ ]*:[ ]*' + name, 'gm'),
-				'animation-name: ' + name + '-' + ID_PLACEHOLDER
-			);
+			scoped = scoped
+				.replace(new RegExp('animation-name[ ]*:[ ]*' + name, 'gm'), 'animation-name: ' + name + '-' + ID_PLACEHOLDER)
+				.replace(new RegExp('animation[ ]*:[ ]*' + name, 'gm'), 'animation: ' + name + '-' + ID_PLACEHOLDER);
 		}
 
 		return scoped;
@@ -198,7 +197,7 @@ export default class XPathCSSGenerator {
 					console.warn(
 						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
 					);
-				} else if(!selectorText.includes('(')) {
+				} else if (!selectorText.includes('(')) {
 					css = this.makeCSSImportant(css);
 					selectors += baseSelector + ' ' + css + '\n';
 				}
