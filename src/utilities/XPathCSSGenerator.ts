@@ -187,7 +187,13 @@ export default class XPathCSSGenerator {
 		for (let i = 0, max = selectorTexts.length; i < max; i++) {
 			let selectorText = selectorTexts[i].trim();
 
-			if (selectorText.startsWith(':host')) {
+			if (selectorText.startsWith(':host-context')) {
+				const selectorParts = selectorText.split(' ');
+				const elementSelector = selectorParts[1] || '';
+				const contextSelector = selectorParts[0].replace(':host-context(', '').replace(')', '');
+
+				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
+			} else if (selectorText.startsWith(':host')) {
 				if (rule.selector.includes('::slotted')) {
 					console.warn(
 						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
@@ -196,12 +202,6 @@ export default class XPathCSSGenerator {
 					css = this.makeCSSImportant(css);
 					selectors += baseSelector + ' ' + css + '\n';
 				}
-			} else if (selectorText.startsWith(':host-context')) {
-				const selectorParts = selectorText.split(' ');
-				const elementSelector = selectorParts[1] || '';
-				const contextSelector = selectorParts[0].replace(':host-context(', '').replace(')', '');
-
-				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
 			} else {
 				if (selectorText.includes('(') && !selectorText.includes(')') && i < max - 1) {
 					selectorText += selectorTexts.splice(i + 1, 1).join('');
