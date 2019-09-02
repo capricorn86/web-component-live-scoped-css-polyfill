@@ -2,6 +2,8 @@ import CSSRule from './css-rules/CSSRule';
 import KeyframeCSSRule from './css-rules/KeyframeCSSRule';
 import MediaCSSRule from './css-rules/MediaCSSRule';
 
+const COMMENT_REGEXP = /\/\*[^*]*\*\//gm;
+
 /**
  * Utility for scoping css by finding a unique path to it.
  */
@@ -23,7 +25,7 @@ export default class CSSRuleParser {
 	 * @param {RegExp} [disableRules] Disable rules matching a certain RegExp.
 	 */
 	constructor(css: string, disableRules: RegExp | string = null) {
-		this.css = css.replace(/\/\*.*\*\//gm, '');
+		this.css = css.replace(COMMENT_REGEXP, '');
 		this.disableRules = disableRules;
 	}
 
