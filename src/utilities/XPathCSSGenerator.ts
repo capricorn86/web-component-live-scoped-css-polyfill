@@ -2,8 +2,6 @@ import CSSRuleParser from './CSSRuleParser';
 import CSSRule from './css-rules/CSSRule';
 import KeyframeCSSRule from './css-rules/KeyframeCSSRule';
 import MediaCSSRule from './css-rules/MediaCSSRule';
-import { maxHeaderSize } from 'http';
-// import RenderQueue from './RenderQueue';
 
 const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const ID_PLACEHOLDER = 'ID_PLACEHOLDER';
