@@ -198,7 +198,6 @@ export default class XPathCSSGenerator {
 						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
 					);
 				} else if (!selectorText.includes('(')) {
-					css = this.makeCSSImportant(css);
 					selectors += baseSelector + ' ' + css + '\n';
 				}
 			} else {
@@ -337,26 +336,6 @@ export default class XPathCSSGenerator {
 				}
 			}
 		}
-	}
-
-	/**
-	 * Makes CSS important.
-	 *
-	 * @param {string} css CSS.
-	 * @return {string} Important CSS.
-	 */
-	private makeCSSImportant(css: string): string {
-		const regexp = /[a-zA-Z-]+[ ]*:[ ]*[^;]+;/gm;
-		let important = [];
-		let match;
-		while ((match = regexp.exec(css))) {
-			if (!match[0].includes('!important')) {
-				important.push(match[0].replace(';', ' !important;'));
-			} else {
-				important.push(match[0]);
-			}
-		}
-		return '{\n' + important.join('\n') + '\n}';
 	}
 
 	/**
