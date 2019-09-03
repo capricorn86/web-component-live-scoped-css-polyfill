@@ -346,13 +346,7 @@ export default class XPathCSSGenerator {
 	 */
 	private getCacheKey(element: Element): string {
 		const structureElement = element.shadowRoot || element;
-		let attributes = '';
-		if(!element.shadowRoot) {
-			for(let i = 0, max = element.attributes.length; i < max; i++) {
-				attributes += element.attributes[i].name + '=' + element.attributes[i].value;
-			}
-		}
-		let key = element.tagName + attributes;
+		let key = this.getElementSignature(element);
 
 		if (structureElement.children) {
 			for (let i = 0, max = structureElement.children.length; i < max; i++) {
@@ -366,6 +360,26 @@ export default class XPathCSSGenerator {
 		}
 
 		return key;
+	}
+
+	/**
+	 * Returns an elements signature.
+	 *
+	 * @param {ShadowRoot|Element} element Element.
+	 * @return {string} Signature.
+	 */
+	private getElementSignature(element: Element): string {
+		if(element['__signatureString'] === undefined) {
+			let signature = element.tagName;
+			if(!element.shadowRoot) {
+				for(let i = 0, max = element.attributes.length; i < max; i++) {
+					signature += element.attributes[i].name + '=' + element.attributes[i].value;
+				}
+			}
+			element['__signatureString'] = signature;
+		}
+
+		return element['__signatureString'];
 	}
 
 	/**
