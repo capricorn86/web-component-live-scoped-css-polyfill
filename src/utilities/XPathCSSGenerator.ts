@@ -349,7 +349,7 @@ export default class XPathCSSGenerator {
 		let attributes = '';
 		if(!element.shadowRoot) {
 			for(let i = 0, max = element.attributes.length; i < max; i++) {
-				attributes += element.attributes[i];
+				attributes += element.attributes[i].name + '=' + element.attributes[i].value;
 			}
 		}
 		let key = element.tagName + attributes;
