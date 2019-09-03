@@ -2,6 +2,7 @@ import CSSRuleParser from './CSSRuleParser';
 import CSSRule from './css-rules/CSSRule';
 import KeyframeCSSRule from './css-rules/KeyframeCSSRule';
 import MediaCSSRule from './css-rules/MediaCSSRule';
+import { maxHeaderSize } from 'http';
 // import RenderQueue from './RenderQueue';
 
 const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -347,7 +348,13 @@ export default class XPathCSSGenerator {
 	 */
 	private getCacheKey(element: Element): string {
 		const structureElement = element.shadowRoot || element;
-		let key = element.tagName;
+		let attributes = '';
+		if(!element.shadowRoot) {
+			for(let i = 0, max = element.attributes.length; i < max; i++) {
+				attributes += element.attributes[i];
+			}
+		}
+		let key = element.tagName + attributes;
 
 		if (structureElement.children) {
 			for (let i = 0, max = structureElement.children.length; i < max; i++) {
