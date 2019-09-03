@@ -238,7 +238,8 @@ export default class XPathCSSGenerator {
 		}
 
 		if (childSelector && !childSelector.startsWith('@')) {
-			const childSelectorElement = childSelector.replace(/\[.+\]/g, '').split(':')[0];
+			const selectorWithoutAttribute = !childSelector.startsWith('[') ? childSelector.replace(/\[.+\]/g, '') : childSelector;
+			const childSelectorElement = selectorWithoutAttribute.split(':')[0];
 			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
 			const cached = baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
 			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
