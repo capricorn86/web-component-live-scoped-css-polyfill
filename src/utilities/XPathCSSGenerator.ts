@@ -2,7 +2,6 @@ import CSSRuleParser from './CSSRuleParser';
 import CSSRule from './css-rules/CSSRule';
 import KeyframeCSSRule from './css-rules/KeyframeCSSRule';
 import MediaCSSRule from './css-rules/MediaCSSRule';
-// import RenderQueue from './RenderQueue';
 
 const ABC = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const ID_PLACEHOLDER = 'ID_PLACEHOLDER';
@@ -198,7 +197,6 @@ export default class XPathCSSGenerator {
 						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
 					);
 				} else if (!selectorText.includes('(')) {
-					css = this.makeCSSImportant(css);
 					selectors += baseSelector + ' ' + css + '\n';
 				}
 			} else {
@@ -239,7 +237,8 @@ export default class XPathCSSGenerator {
 		}
 
 		if (childSelector && !childSelector.startsWith('@')) {
-			const childSelectorElement = childSelector.replace(/\[.+\]/g, '').split(':')[0];
+			const selectorWithoutAttribute = !childSelector.startsWith('[') ? childSelector.replace(/\[.+\]/g, '') : childSelector;
+			const childSelectorElement = selectorWithoutAttribute.split(':')[0];
 			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
 			const cached = baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
 			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
@@ -340,26 +339,6 @@ export default class XPathCSSGenerator {
 	}
 
 	/**
-	 * Makes CSS important.
-	 *
-	 * @param {string} css CSS.
-	 * @return {string} Important CSS.
-	 */
-	private makeCSSImportant(css: string): string {
-		const regexp = /[a-zA-Z-]+[ ]*:[ ]*[^;]+;/gm;
-		let important = [];
-		let match;
-		while ((match = regexp.exec(css))) {
-			if (!match[0].includes('!important')) {
-				important.push(match[0].replace(';', ' !important;'));
-			} else {
-				important.push(match[0]);
-			}
-		}
-		return '{\n' + important.join('\n') + '\n}';
-	}
-
-	/**
 	 * Returns a cache key.
 	 *
 	 * @param {ShadowRoot|Element} element Element.
@@ -367,7 +346,7 @@ export default class XPathCSSGenerator {
 	 */
 	private getCacheKey(element: Element): string {
 		const structureElement = element.shadowRoot || element;
-		let key = element.tagName;
+		let key = this.getElementSignature(element);
 
 		if (structureElement.children) {
 			for (let i = 0, max = structureElement.children.length; i < max; i++) {
@@ -381,6 +360,26 @@ export default class XPathCSSGenerator {
 		}
 
 		return key;
+	}
+
+	/**
+	 * Returns an elements signature.
+	 *
+	 * @param {ShadowRoot|Element} element Element.
+	 * @return {string} Signature.
+	 */
+	private getElementSignature(element: Element): string {
+		if(element['__signatureString'] === undefined) {
+			let signature = element.tagName;
+			if(!element.shadowRoot) {
+				for(let i = 0, max = element.attributes.length; i < max; i++) {
+					signature += element.attributes[i].name + '=' + element.attributes[i].value;
+				}
+			}
+			element['__signatureString'] = signature;
+		}
+
+		return element['__signatureString'];
 	}
 
 	/**
