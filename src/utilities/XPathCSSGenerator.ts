@@ -219,7 +219,7 @@ export default class XPathCSSGenerator {
 	 * @param {string} selectorText Selector text.
 	 * @param {string} baseSelector Previous selector.
 	 * @param {object} cache cache.
-	 * @return {string} XPath selector.
+	 * @return {string} CSS with XPath selector.
 	 */
 	private getScopedCSSForElement(
 		baseElement: Element | ShadowRoot,
@@ -256,19 +256,39 @@ export default class XPathCSSGenerator {
 				}
 
 				if (childSelector === '*') {
-					const xPathSelector = element !== baseElement ? ' > ' + this.getXPathSelector(element, baseElement) : '';
+					const xPathSelector = element !== baseElement ? ' > ' + this.getXPathSelector(element, baseElement).join(' > ') : '';
 					const newSelector = baseSelector + xPathSelector;
-					selectors += newSelector + css + '\n';
+					const newCSS = newSelector + css + '\n';
+					if(!selectors.includes(newCSS)) {
+						selectors += newCSS;
+					}
 				} else {
-					const xPathSelector =
-						element.parentNode !== baseElement
-							? ' > ' + this.getXPathSelector(<Element>element.parentNode, baseElement)
-							: '';
-					const newSelector = baseSelector + xPathSelector + ' > ' + childSelector;
-					if (nextSelectorText) {
-						selectors += this.getScopedCSSForElement(element, css, nextSelectorText, newSelector, cache);
+					let useChildSelector = childSelector;
+					let isId = childSelector[0] === '#';
+					let xPathSelector = '';
+					if(!isId && element !== baseElement && element['shadowRoot'] !== baseElement) {
+						const selector = this.getXPathSelector(<Element>element, baseElement);
+						isId = selector[0][0] === '#';
+						if(isId) {
+							useChildSelector = selector[0];
+						} else {
+							selector.pop();
+							selector.unshift('');
+							xPathSelector = selector.join(' > ');
+						}
+					}
+					const scope = isId ? ' ' : ' > ';
+					const newSelector = baseSelector + xPathSelector + scope + useChildSelector;
+					if (!isId && nextSelectorText) {
+						const newCSS = this.getScopedCSSForElement(element, css, nextSelectorText, newSelector, cache);
+						if(!selectors.includes(newCSS)) {
+							selectors += newCSS;
+						}
 					} else if (!selectors.includes(newSelector)) {
-						selectors += newSelector + css + '\n';
+						const newCSS = newSelector + css + '\n';
+						if(!selectors.includes(newCSS)) {
+							selectors += newCSS;
+						}
 					}
 				}
 			}
@@ -282,35 +302,33 @@ export default class XPathCSSGenerator {
 	 *
 	 * @param {Element} element Element.
 	 * @param {Element|ShadowRoot} baseElement Parent.
-	 * @param {string} [nextSelector] Next selector.
-	 * @return {string} XPath selector.
+	 * @return {string[]} XPath selector.
 	 */
-	private getXPathSelector(element: Element, baseElement: Element | ShadowRoot, nextSelector: string = null): string {
-		let selector = '';
-		nextSelector = nextSelector ? ' > ' + nextSelector : '';
+	private getXPathSelector(element: Element, baseElement: Element | ShadowRoot): string[] {
+		let selector = [];
 
 		if (element.id) {
-			return element.id;
+			return ['#' + element.id];
 		} else if (typeof element.className === 'string' && element.className && !element['shadowRoot']) {
-			selector = '.' + Array.prototype.slice.apply(element.classList).join('.') + nextSelector;
+			selector.unshift('.' + Array.prototype.slice.apply(element.classList).join('.'));
 		} else {
-			selector = element.tagName.toLowerCase() + nextSelector;
+			selector.unshift(element.tagName.toLowerCase());
 		}
 
 		if (element.parentNode && element.parentNode !== baseElement) {
 			const shadowRoot = element.parentNode['shadowRoot'];
-			let slotXPathSelector = '';
+			let slotXPathSelector = [];
 			if (shadowRoot) {
 				const slotName = element.getAttribute('slot');
 				const slotSelector = slotName ? 'slot[name="' + slotName + '"]' : 'slot';
 				const slotElement = shadowRoot.querySelector(slotSelector);
 
 				if (slotElement && slotElement.parentNode !== shadowRoot) {
-					slotXPathSelector = ' > ' + this.getXPathSelector(slotElement.parentNode, shadowRoot, nextSelector);
+					slotXPathSelector = this.getXPathSelector(slotElement.parentNode, shadowRoot);
 				}
 			}
-			const parentSelector = this.getXPathSelector(<HTMLElement>element.parentNode, baseElement, nextSelector);
-			selector = parentSelector + slotXPathSelector + ' > ' + selector;
+			const parentSelector = this.getXPathSelector(<HTMLElement>element.parentNode, baseElement);
+			selector = parentSelector.concat(slotXPathSelector, selector);
 		}
 
 		return selector;
