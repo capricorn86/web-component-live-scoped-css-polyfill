@@ -95,7 +95,7 @@ require('web-component-live-scoped-css-polyfill');
 | Library     | Render method        |
 | ----------- | -------------------- |
 | (Popular)   | requestRender()      |
-| lit-element | requestUpdate()      |
+| lit-element | update()      |
 | stenciljs   | componentDidRender() |
 | skate.js    | renderer()           |
 | slimjs      | onRender()           |
