@@ -111,7 +111,7 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
-| 1.1.21  | 2019-09-12 | Bugfix for wrong lit-element render method not hooked.     |
+| 1.1.21  | 2019-09-12 | Bugfix for lit-element render method not hooked.     |
 | 1.1.20  | 2019-09-12 | Bugfix for selectors inside a slot not working.     |
 | 1.1.2   | 2019-08-29 | Adds option for enabling debugging.                 |
 | 1.1.0   | 2019-08-29 | Major performance improvements and minor bug fixes. |
