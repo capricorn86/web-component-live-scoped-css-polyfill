@@ -2,7 +2,7 @@ import XPathCSSGenerator from '../utilities/XPathCSSGenerator';
 
 const libraryRenderMethods = [
 	'requestRender', // popular
-	'requestUpdate', // lit-element
+	'update', // lit-element
 	'componentDidRender', // stenciljs
 	'renderer', //skate.js
 	'onRender', // slimjs
