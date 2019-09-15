@@ -191,12 +191,30 @@ export default class XPathCSSGenerator {
 				const contextSelector = selectorParts[0].replace(':host-context(', '').replace(')', '');
 
 				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
+			} else if (selectorText.startsWith('::slotted')) {
+				const selectorWithoutSlotted = rule.selector
+					.replace('::slotted', '')
+					.replace('(', '')
+					.replace(')', '')
+					.trim();
+				const elements = Array.from(this.element.querySelectorAll(selectorWithoutSlotted));
+				for (const element of elements) {
+					const xPathSelector = this.getXPathSelector(element, this.element).join(' > ');
+					const newCSS = baseSelector + ' > ' + xPathSelector + css + '\n';
+					if (!selectors.includes(newCSS)) {
+						selectors += newCSS;
+					}
+				}
 			} else if (selectorText.startsWith(':host')) {
-				if (rule.selector.includes('::slotted')) {
+				if (selectorText.includes('(')) {
 					console.warn(
-						'Found unsupported CSS rule "::slotted" in selector "' + rule.selector + '". The rule will be ignored.'
+						'Found unsupported CSS rule "' +
+							selectorText +
+							'" in selector "' +
+							rule.selector +
+							'". The rule will be ignored.'
 					);
-				} else if (!selectorText.includes('(')) {
+				} else {
 					selectors += baseSelector + ' ' + css + '\n';
 				}
 			} else {
@@ -204,7 +222,14 @@ export default class XPathCSSGenerator {
 					selectorText += selectorTexts.splice(i + 1, 1).join('');
 					max--;
 				}
-				selectors += this.getScopedCSSForElement(this.element, css, selectorText, baseSelector, cache);
+				selectors += this.getScopedCSSForElement({
+					baseElement: this.element,
+					css,
+					selectorText,
+					baseSelector,
+					cache,
+					walkIntoShadowRoots: true
+				});
 			}
 		}
 
@@ -214,37 +239,45 @@ export default class XPathCSSGenerator {
 	/**
 	 * Returns XPath elements from a selector.
 	 *
-	 * @param {Element|ShadowRoot} baseElement Parent.
-	 * @param {string} css CSS.
-	 * @param {string} selectorText Selector text.
-	 * @param {string} baseSelector Previous selector.
-	 * @param {object} cache cache.
+	 * @param {options} options Options.
+	 * @param {Element|ShadowRoot} options.baseElement Parent.
+	 * @param {string} options.css CSS.
+	 * @param {string} options.selectorText Selector text.
+	 * @param {string} options.baseSelector Previous selector.
+	 * @param {object} options.cache cache.
+	 * @param {boolean} options.walkIntoShadowRoots "true" to walk into shadow roots.
 	 * @return {string} CSS with XPath selector.
 	 */
-	private getScopedCSSForElement(
-		baseElement: Element | ShadowRoot,
-		css: string,
-		selectorText: string,
-		baseSelector: string,
-		cache: { [k: string]: Element[] }
-	): string {
+	private getScopedCSSForElement(options: {
+		baseElement: Element | ShadowRoot;
+		css: string;
+		selectorText: string;
+		baseSelector: string;
+		cache: { [k: string]: Element[] };
+		walkIntoShadowRoots: boolean;
+	}): string {
+		const { css, selectorText, baseSelector, cache, walkIntoShadowRoots } = options;
 		const childSelectors = selectorText.replace(/ *> */g, '>').split(' ');
 		const childSelector = childSelectors.shift();
+		let { baseElement } = options;
 		let selectors = '';
 
-		if (baseElement['shadowRoot']) {
+		if (walkIntoShadowRoots && baseElement['shadowRoot']) {
 			baseElement = baseElement['shadowRoot'];
 		}
 
 		if (childSelector && !childSelector.startsWith('@')) {
-			const selectorWithoutAttribute = !childSelector.startsWith('[') ? childSelector.replace(/\[.+\]/g, '') : childSelector;
+			const selectorWithoutAttribute = !childSelector.startsWith('[')
+				? childSelector.replace(/\[.+\]/g, '')
+				: childSelector;
 			const childSelectorElement = selectorWithoutAttribute.split(':')[0];
 			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
-			const cached = baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
+			const cached =
+				baseElement === this.element || baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
 			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
 			const nextSelectorText = childSelectors.join(' ').trim();
 
-			if (baseElement === this.element['shadowRoot']) {
+			if (baseElement === this.element || baseElement === this.element['shadowRoot']) {
 				cache[elementSelector] = elements;
 			}
 
@@ -256,20 +289,21 @@ export default class XPathCSSGenerator {
 				}
 
 				if (childSelector === '*') {
-					const xPathSelector = element !== baseElement ? ' > ' + this.getXPathSelector(element, baseElement).join(' > ') : '';
+					const xPathSelector =
+						element !== baseElement ? ' > ' + this.getXPathSelector(element, baseElement).join(' > ') : '';
 					const newSelector = baseSelector + xPathSelector;
 					const newCSS = newSelector + css + '\n';
-					if(!selectors.includes(newCSS)) {
+					if (!selectors.includes(newCSS)) {
 						selectors += newCSS;
 					}
 				} else {
 					let useChildSelector = childSelector;
 					let isId = childSelector[0] === '#';
 					let xPathSelector = '';
-					if(!isId && element !== baseElement && element['shadowRoot'] !== baseElement) {
+					if (!isId && element !== baseElement && element['shadowRoot'] !== baseElement) {
 						const selector = this.getXPathSelector(<Element>element, baseElement);
 						isId = selector[0][0] === '#';
-						if(isId) {
+						if (isId) {
 							useChildSelector = selector[0];
 						} else {
 							selector.pop();
@@ -280,13 +314,20 @@ export default class XPathCSSGenerator {
 					const scope = isId ? ' ' : ' > ';
 					const newSelector = baseSelector + xPathSelector + scope + useChildSelector;
 					if (!isId && nextSelectorText) {
-						const newCSS = this.getScopedCSSForElement(element, css, nextSelectorText, newSelector, cache);
-						if(!selectors.includes(newCSS)) {
+						const newCSS = this.getScopedCSSForElement({
+							baseElement: element,
+							css,
+							selectorText: nextSelectorText,
+							baseSelector: newSelector,
+							cache,
+							walkIntoShadowRoots
+						});
+						if (!selectors.includes(newCSS)) {
 							selectors += newCSS;
 						}
 					} else if (!selectors.includes(newSelector)) {
 						const newCSS = newSelector + css + '\n';
-						if(!selectors.includes(newCSS)) {
+						if (!selectors.includes(newCSS)) {
 							selectors += newCSS;
 						}
 					}
@@ -314,21 +355,23 @@ export default class XPathCSSGenerator {
 		} else {
 			selector.unshift(element.tagName.toLowerCase());
 		}
-
-		if (element.parentNode && element.parentNode !== baseElement) {
+		if (element.parentNode) {
 			const shadowRoot = element.parentNode['shadowRoot'];
-			let slotXPathSelector = [];
+
 			if (shadowRoot) {
 				const slotName = element.getAttribute('slot');
 				const slotSelector = slotName ? 'slot[name="' + slotName + '"]' : 'slot';
 				const slotElement = shadowRoot.querySelector(slotSelector);
 
 				if (slotElement && slotElement.parentNode !== shadowRoot) {
-					slotXPathSelector = this.getXPathSelector(slotElement.parentNode, shadowRoot);
+					selector = this.getXPathSelector(slotElement.parentNode, shadowRoot).concat(selector);
 				}
 			}
-			const parentSelector = this.getXPathSelector(<HTMLElement>element.parentNode, baseElement);
-			selector = parentSelector.concat(slotXPathSelector, selector);
+
+			if (element.parentNode !== baseElement) {
+				const parentSelector = this.getXPathSelector(<HTMLElement>element.parentNode, baseElement);
+				selector = parentSelector.concat(selector);
+			}
 		}
 
 		return selector;
@@ -387,10 +430,10 @@ export default class XPathCSSGenerator {
 	 * @return {string} Signature.
 	 */
 	private getElementSignature(element: Element): string {
-		if(element['__signatureString'] === undefined) {
+		if (element['__signatureString'] === undefined) {
 			let signature = element.tagName;
-			if(!element.shadowRoot) {
-				for(let i = 0, max = element.attributes.length; i < max; i++) {
+			if (!element.shadowRoot) {
+				for (let i = 0, max = element.attributes.length; i < max; i++) {
 					signature += element.attributes[i].name + '=' + element.attributes[i].value;
 				}
 			}

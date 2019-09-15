@@ -103,7 +103,7 @@ require('web-component-live-scoped-css-polyfill');
 
 
 # Known Limitations
-"::slotted" is not supported at the moment.
+Using a function argument on the ":host" selector is not supported (example: ":host(.special)").
 
 If you have a need for a missing feature or if you have found a bug, please let me know, and I will do my best to fix it.
 
@@ -111,7 +111,8 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
-| 1.1.21  | 2019-09-12 | Bugfix for lit-element render method not hooked.     |
+| 1.2.0   | 2019-09-12 | Adds support for "::slotted" CSS rule.              |
+| 1.1.21  | 2019-09-12 | Bugfix for lit-element render method not hooked.    |
 | 1.1.20  | 2019-09-12 | Bugfix for selectors inside a slot not working.     |
 | 1.1.2   | 2019-08-29 | Adds option for enabling debugging.                 |
 | 1.1.0   | 2019-08-29 | Major performance improvements and minor bug fixes. |
