@@ -3,10 +3,8 @@ import XPathCSSGenerator from '../utilities/XPathCSSGenerator';
 const libraryRenderMethods = [
 	'requestRender', // popular
 	'update', // lit-element
-	'componentDidRender', // stenciljs
-	'renderer', //skate.js
-	'onRender', // slimjs
-	'render' //hybrid.js
+	'renderedCallback', //skate.js
+	'render' //slimjs && hybrid.js
 ];
 const originalDefine = window.customElements.define;
 

@@ -90,20 +90,32 @@ require('web-component-live-scoped-css-polyfill');
 | disableRules         | string\|RegExp | null    | Rules to disable as a RegExp or string. This could be useful for rules that can be applied globally instead. Example: "*, *:before, *:after" |
 | debug         | boolean | false    | Set to "true" to enable debugging. |
 
-### Supported libraries
+# Supported libraries
 
-| Library     | Render method        |
-| ----------- | -------------------- |
-| (Popular)   | requestRender()      |
-| lit-element | update()      |
-| stenciljs   | componentDidRender() |
-| skate.js    | renderer()           |
-| slimjs      | onRender()           |
-| hybrid.js   | render()             |
+| Library     | Render method        | Support      |
+| ----------- | -------------------- | ------------ |
+| (Popular)   | requestRender()      | Automatic    |
+| lit-element | update()             | Automatic    |
+| stenciljs   |                      | Not possible to do automatically as the render method is private. You will have to declare componentDidRender() and manually trigger "this.updateScopedCSSPolyfill()".                   |
+| skate.js    | renderedCallback()   | Automatic    |
+| slimjs      | render()             | Automatic    |
+| hybrid.js   | render()             | Not tested   |
 
+
+# Manual Update
+
+This should only be necessary to do if your library is not supported and it is not possible to set a render method in the configuration.
+
+```javascript
+class MyComponent {
+   componentDidRender() {
+       this.updateScopedCSSPolyfill();
+   }
+}
+```
 
 # Known Limitations
-Using a function argument on the ":host" selector is not supported (example: ":host(.special)").
+Using a function argument on the ":host" selector is not supported yet (example: ":host(.special)").
 
 If you have a need for a missing feature or if you have found a bug, please let me know, and I will do my best to fix it.
 
