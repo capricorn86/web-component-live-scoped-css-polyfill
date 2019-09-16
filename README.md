@@ -99,7 +99,7 @@ require('web-component-live-scoped-css-polyfill');
 | stenciljs   |                      | Not possible to do automatically as the render method is private. You will have to declare componentDidRender() and manually trigger "this.updateScopedCSSPolyfill()".                   |
 | skate.js    | renderedCallback()   | Automatic    |
 | slimjs      | render()             | Automatic    |
-| hybrid.js   | render()             | Not tested   |
+| hybrid.js   | render()             | Not tested yet |
 
 
 # Manual Update
