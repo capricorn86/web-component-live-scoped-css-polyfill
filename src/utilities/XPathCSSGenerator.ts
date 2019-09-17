@@ -192,15 +192,18 @@ export default class XPathCSSGenerator {
 
 				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
 			} else if (selectorText.startsWith('::slotted')) {
+				const shadowRoot = this.element.shadowRoot || this.element;
 				const selectorWithoutSlotted = rule.selector
 					.replace('::slotted', '')
 					.replace('(', '')
 					.replace(')', '')
 					.trim();
-				const elements = Array.from(this.element.querySelectorAll(selectorWithoutSlotted));
-				for (const element of elements) {
-					const xPathSelector = this.getXPathSelector(element, this.element).join(' > ');
-					const newCSS = baseSelector + ' > ' + xPathSelector + css + '\n';
+				const slots = Array.from(shadowRoot.querySelectorAll('slot'));
+				for (const slot of slots) {
+					const xPathSelector = this.getXPathSelector(slot, this.element);
+					xPathSelector.pop();
+					xPathSelector.push(selectorWithoutSlotted);
+					const newCSS = baseSelector + ' > ' + xPathSelector.join(' > ') + css + '\n';
 					if (!selectors.includes(newCSS)) {
 						selectors += newCSS;
 					}
