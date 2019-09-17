@@ -200,7 +200,7 @@ export default class XPathCSSGenerator {
 					.trim();
 				const slots = Array.from(shadowRoot.querySelectorAll('slot'));
 				for (const slot of slots) {
-					const xPathSelector = this.getXPathSelector(slot, this.element);
+					const xPathSelector = this.getXPathSelector(slot, shadowRoot);
 					xPathSelector.pop();
 					xPathSelector.push(selectorWithoutSlotted);
 					const newCSS = baseSelector + ' > ' + xPathSelector.join(' > ') + css + '\n';
@@ -353,6 +353,8 @@ export default class XPathCSSGenerator {
 
 		if (element.id) {
 			return ['#' + element.id];
+		} else if (typeof element.className === 'string' && element.className && !element['shadowRoot']) {
+			selector.unshift('.' + Array.prototype.slice.apply(element.classList).join('.'));
 		} else if (typeof element.className === 'string' && element.className && !element['shadowRoot']) {
 			selector.unshift('.' + Array.prototype.slice.apply(element.classList).join('.'));
 		} else {
