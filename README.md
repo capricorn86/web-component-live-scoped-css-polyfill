@@ -123,7 +123,7 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
-| 1.2.4   | 2019-10-09 | Fixes issue with ":host-context" selectors not being scoped. (#1)       |
+| 1.2.5   | 2019-10-09 | Fixes issue with ":host-context" selectors not being scoped. (#1)       |
 | 1.2.1   | 2019-09-16 | Updates rules for libraries based on testing.       |
 | 1.2.0   | 2019-09-12 | Adds support for "::slotted" CSS rule.              |
 | 1.1.21  | 2019-09-12 | Bugfix for lit-element render method not hooked.    |
