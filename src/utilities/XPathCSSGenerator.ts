@@ -187,10 +187,21 @@ export default class XPathCSSGenerator {
 
 			if (selectorText.startsWith(':host-context')) {
 				const selectorParts = selectorText.split(' ');
-				const elementSelector = selectorParts[1] || '';
 				const contextSelector = selectorParts[0].replace(':host-context(', '').replace(')', '');
+				const elementSelector = selectorParts[1] ? selectorParts[1].trim() : null;
 
-				selectors += contextSelector + ' ' + baseSelector + ' ' + elementSelector + ' ' + css + '\n';
+				if (elementSelector) {
+					selectors += this.getScopedCSSForElement({
+						baseElement: this.element,
+						css,
+						selectorText: elementSelector,
+						baseSelector: contextSelector + ' ' + baseSelector,
+						cache,
+						walkIntoShadowRoots: true
+					});
+				} else {
+					selectors += contextSelector + ' ' + baseSelector + ' ' + css + '\n';
+				}
 			} else if (selectorText.startsWith('::slotted')) {
 				const shadowRoot = this.element.shadowRoot || this.element;
 				const selectorWithoutSlotted = rule.selector
