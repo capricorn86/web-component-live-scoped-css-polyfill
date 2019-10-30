@@ -88,6 +88,7 @@ require('web-component-live-scoped-css-polyfill');
 | onlyScopeOnConnected | boolean        | false   | If this is set to "true", the "renderMethod" behavior will be disabled and scoping will only happen after the element has been connected once. This will improve performance drastically for applications not changing style during render. |
 | force                | boolean        | false   | Forces the polyfill to be loaded even if the browser has native support. |
 | disableRules         | string\|RegExp | null    | Rules to disable as a RegExp or string. This could be useful for rules that can be applied globally instead. Example: "*, *:before, *:after" |
+| disableComponents         | string[] | null    | A list of web component tag names to disable the polyfill on. |
 | debug         | boolean | false    | Set to "true" to enable debugging. |
 
 # Supported libraries
@@ -123,6 +124,7 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
+| 1.3.0   | 2019-10-30 | Adds support for "disableComponents" option.       |
 | 1.2.6   | 2019-10-30 | Fixes issue with -moz-keyframes and -webkit-keyframe not working.       |
 | 1.2.5   | 2019-10-09 | Fixes issue with ":host-context" selectors not being scoped. (#1)       |
 | 1.2.1   | 2019-09-16 | Updates rules for libraries based on testing.       |
