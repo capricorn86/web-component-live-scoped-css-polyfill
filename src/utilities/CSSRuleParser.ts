@@ -100,6 +100,12 @@ export default class CSSRuleParser {
 		if (selector.startsWith('@keyframes')) {
 			rule = new KeyframeCSSRule();
 			rule.animationName = selector.replace('@keyframes', '').trim();
+		} else if (selector.startsWith('@-moz-keyframes')) {
+			rule = new KeyframeCSSRule();
+			rule.animationName = selector.replace('@-moz-keyframes', '').trim();
+		} else if (selector.startsWith('@-webkit-keyframes')) {
+			rule = new KeyframeCSSRule();
+			rule.animationName = selector.replace('@-webkit-keyframes', '').trim();
 		} else if (selector.startsWith('@media')) {
 			rule = new MediaCSSRule();
 		} else {
