@@ -446,17 +446,14 @@ export default class XPathCSSGenerator {
 	 * @return {string} Signature.
 	 */
 	private getElementSignature(element: Element): string {
-		if (element['__signatureString'] === undefined) {
-			let signature = element.tagName;
-			if (!element.shadowRoot) {
-				for (let i = 0, max = element.attributes.length; i < max; i++) {
-					signature += element.attributes[i].name + '=' + element.attributes[i].value;
-				}
+		let signature = element.tagName;
+		if (!element.shadowRoot) {
+			for (let i = 0, max = element.attributes.length; i < max; i++) {
+				signature += element.attributes[i].name + '=' + element.attributes[i].value;
 			}
-			element['__signatureString'] = signature;
 		}
 
-		return element['__signatureString'];
+		return signature;
 	}
 
 	/**
