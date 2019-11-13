@@ -90,17 +90,18 @@ require('web-component-live-scoped-css-polyfill');
 | disableRules         | string\|RegExp | null    | Rules to disable as a RegExp or string. This could be useful for rules that can be applied globally instead. Example: "*, *:before, *:after" |
 | disableComponents         | string[] | null    | A list of web component tag names to disable the polyfill on. |
 | debug         | boolean | false    | Set to "true" to enable debugging. |
+| scopeAttributeName       | string | '_p'    | Sets the name of the attribute used for scoping. |
 
 # Supported libraries
 
 | Library     | Render method        | Support      |
 | ----------- | -------------------- | ------------ |
-| (Popular)   | requestRender()      | Automatic    |
 | lit-element | update()             | Automatic    |
 | stenciljs   |                      | Not possible to do automatically as the render method is private. You will have to declare componentDidRender() and manually trigger "this.updateScopedCSSPolyfill()".                   |
 | skate.js    | renderedCallback()   | Automatic    |
 | slimjs      | render()             | Automatic    |
 | hybrid.js   | render()             | Not tested yet |
+| (Popular)   | requestRender()      | Automatic    |
 
 
 # Manual Update
@@ -124,6 +125,7 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
+| 1.4.0   | 2019-11-01 | Uses attribute instead of class for scoping CSS to prevent colission with frameworks. (#3)       |
 | 1.3.1   | 2019-11-01 | Fixes issue with attributes not being cached correctly causing class changes not being updated. (#2)       |
 | 1.3.0   | 2019-10-30 | Adds support for "disableComponents" option.       |
 | 1.2.6   | 2019-10-30 | Fixes issue with -moz-keyframes and -webkit-keyframe not working.       |

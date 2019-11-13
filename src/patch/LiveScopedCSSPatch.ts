@@ -1,10 +1,10 @@
 import XPathCSSGenerator from '../utilities/XPathCSSGenerator';
 
 const libraryRenderMethods = [
-	'requestRender', // popular
 	'update', // lit-element
 	'renderedCallback', //skate.js
-	'render' //slimjs && hybrid.js
+	'render', //slimjs && hybrid.js
+	'requestRender' // popular
 ];
 const originalDefine = window.customElements.define;
 
@@ -14,12 +14,12 @@ window.customElements.define = function(name, componentClass) {
 	if (!disableComponents || !disableComponents.includes(name)) {
 		const renderMethod = window['liveScopedCSSPolyfill'].renderMethod;
 		const disableRules = window['liveScopedCSSPolyfill'].disableRules;
+		const scopeAttributeName = window['liveScopedCSSPolyfill'].scopeAttributeName;
 		const debug = window['liveScopedCSSPolyfill'].debug;
 		const onlyScopeOnConnected = window['liveScopedCSSPolyfill'].onlyScopeOnConnected === true;
 		const renderMethods = renderMethod !== 'auto' ? [renderMethod] : libraryRenderMethods;
 		const originalConnectedCallback = componentClass.prototype.connectedCallback;
 		const originalDisconnectedCallback = componentClass.prototype.disconnectedCallback;
-		const originalSetAttribute = componentClass.prototype.setAttribute;
 		const originalRemoveAttribute = componentClass.prototype.removeAttribute;
 
 		if (!onlyScopeOnConnected) {
@@ -49,7 +49,7 @@ window.customElements.define = function(name, componentClass) {
 		};
 
 		componentClass.prototype.connectedCallback = function() {
-			this.__xPathCSSGenerator = new XPathCSSGenerator(this, { disableRules, debug });
+			this.__xPathCSSGenerator = new XPathCSSGenerator(this, { disableRules, debug, scopeAttributeName });
 			this.__xPathCSSGenerator.connect();
 			if (originalConnectedCallback) {
 				originalConnectedCallback.call(this);
@@ -66,18 +66,8 @@ window.customElements.define = function(name, componentClass) {
 			}
 		};
 
-		componentClass.prototype.setAttribute = function(name: string, value: string) {
-			if (name === 'class' && this.__xPathCSSGenerator.id) {
-				const classes = value ? value.split(' ') : [];
-				if (!classes.includes(this.__xPathCSSGenerator.id)) {
-					value = classes.concat(this.__xPathCSSGenerator.id).join(' ');
-				}
-			}
-			originalSetAttribute.call(this, name, value);
-		};
-
 		componentClass.prototype.removeAttribute = function(name: string) {
-			if (name !== 'class') {
+			if (name !== scopeAttributeName) {
 				originalRemoveAttribute.call(this, name);
 			}
 		};

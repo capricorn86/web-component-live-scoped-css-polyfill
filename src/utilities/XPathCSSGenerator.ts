@@ -18,25 +18,25 @@ export default class XPathCSSGenerator {
 	private latestCacheKey: string = null;
 	private disableRules: RegExp | string;
 	private debug: boolean;
+	private scopeAttributeName: string;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param {HTMLElement} element Element.
-	 * @param {object} [options] Options.
-	 * @param {RegExp|string} [options.disableRules] Disable rules matching a certain RegExp.
-	 * @param {boolean} [options.debug] Set to "true" to enable debugging.
+	 * @param {object} options Options.
+	 * @param {RegExp|string} options.disableRules Disable rules matching a certain RegExp.
+	 * @param {boolean} options.debug Set to "true" to enable debugging.
+	 * @param {string} options.scopeAttributeName Name of the attribute to be used for scoping.
 	 */
 	constructor(
 		element: HTMLElement,
-		options: { disableRules: RegExp | string; debug: boolean } = {
-			disableRules: null,
-			debug: false
-		}
+		options: { disableRules: RegExp | string; debug: boolean, scopeAttributeName: string }
 	) {
 		this.element = element;
 		this.disableRules = options.disableRules;
 		this.debug = options.debug;
+		this.scopeAttributeName = options.scopeAttributeName;
 	}
 
 	/**
@@ -48,7 +48,8 @@ export default class XPathCSSGenerator {
 	 * Disconnects it.
 	 */
 	public disconnect(): void {
-		this.element.classList.remove(this.id);
+		this.element.setAttribute(this.scopeAttributeName, '');
+		this.element = null;
 	}
 
 	/**
@@ -66,11 +67,6 @@ export default class XPathCSSGenerator {
 
 			if (!cached || cached !== this.id) {
 				if (cached !== undefined) {
-					if (this.id !== cached) {
-						this.element.classList.remove(this.id);
-						this.id = null;
-					}
-
 					if (this.debug) {
 						console.log(
 							'LiveScropedCSSPolyfill: Used DOM tree cache for "' + this.element.tagName.toLowerCase() + '".',
@@ -80,7 +76,7 @@ export default class XPathCSSGenerator {
 
 					if (cached !== '') {
 						if (this.id !== cached) {
-							this.element.classList.add(cached);
+							this.element.setAttribute(this.scopeAttributeName, cached);
 						}
 
 						this.id = cached;
@@ -97,9 +93,8 @@ export default class XPathCSSGenerator {
 					}
 
 					if (scoped) {
-						this.element.classList.remove(this.id);
 						this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
-						this.element.classList.add(this.id);
+						this.element.setAttribute(this.scopeAttributeName, this.id);
 
 						cache[cacheKey] = this.id;
 
@@ -109,13 +104,13 @@ export default class XPathCSSGenerator {
 						document.head.appendChild(newStyle);
 					} else {
 						cache[cacheKey] = '';
-						this.element.classList.remove(this.id);
+						this.element.setAttribute(this.scopeAttributeName, '');
 						this.id = null;
 					}
 				}
 			}
 		} else if (!cacheKey) {
-			this.element.classList.remove(this.id);
+			this.element.setAttribute(this.scopeAttributeName, '');
 			this.id = null;
 		}
 
@@ -176,7 +171,7 @@ export default class XPathCSSGenerator {
 	 * @return {string} CSS.
 	 */
 	private getScopedRule(rule: CSSRule, cache: { [k: string]: Element[] }): string {
-		const baseSelector = this.element.tagName.toLowerCase() + '.' + ID_PLACEHOLDER;
+		const baseSelector = `${this.element.tagName.toLowerCase()}[${this.scopeAttributeName}="${ID_PLACEHOLDER}"]`;
 		let selectors = '';
 		let css = rule.css;
 
