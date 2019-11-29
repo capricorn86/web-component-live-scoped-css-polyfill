@@ -58,7 +58,7 @@ export default class XPathCSSGenerator {
 	public update(): void {
 		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
-		const cacheKey = this.getCacheKey(this.element);
+		const cacheKey = this.getCacheKey(this.element.shadowRoot);
 
 		this.disableStyles(styles);
 
@@ -416,9 +416,9 @@ export default class XPathCSSGenerator {
 	 * @param {ShadowRoot|Element} element Element.
 	 * @return {string} Cache key.
 	 */
-	private getCacheKey(element: Element): string {
-		const structureElement = element.shadowRoot || element;
-		let key = this.getElementSignature(element);
+	private getCacheKey(element: Element|ShadowRoot): string {
+		const structureElement = element;
+		let key = !(element instanceof ShadowRoot)  ? this.getElementSignature(element) : '';
 
 		if (structureElement.children) {
 			for (let i = 0, max = structureElement.children.length; i < max; i++) {

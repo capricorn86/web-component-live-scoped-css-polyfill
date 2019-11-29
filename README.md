@@ -125,6 +125,7 @@ If you have a need for a missing feature or if you have found a bug, please let 
 
 | Version | Date       | Description                                         |
 | ------- | ---------- | --------------------------------------------------- |
+| 1.4.2   | 2019-11-29 | Fixes issue with cache key not being generated correctly, causing changes not being updated.       |
 | 1.4.0   | 2019-11-01 | Uses attribute instead of class for scoping CSS to prevent collision with frameworks. (#3)       |
 | 1.3.1   | 2019-11-01 | Fixes issue with attributes not being cached correctly causing class changes not being updated. (#2)       |
 | 1.3.0   | 2019-10-30 | Adds support for "disableComponents" option.       |
