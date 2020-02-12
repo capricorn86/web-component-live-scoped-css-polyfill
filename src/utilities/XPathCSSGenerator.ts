@@ -11,8 +11,6 @@ const ID_REGEXP = new RegExp(ID_PLACEHOLDER, 'gm');
  * Utility for scoping css by finding a unique path to it.
  */
 export default class XPathCSSGenerator {
-	private static index = 0;
-	private static cache: { [k: string]: string } = {};
 	public id: string;
 	private element: HTMLElement;
 	private latestCacheKey: string = null;
@@ -31,7 +29,7 @@ export default class XPathCSSGenerator {
 	 */
 	constructor(
 		element: HTMLElement,
-		options: { disableRules: RegExp | string; debug: boolean, scopeAttributeName: string }
+		options: { disableRules: RegExp | string; debug: boolean; scopeAttributeName: string }
 	) {
 		this.element = element;
 		this.disableRules = options.disableRules;
@@ -56,7 +54,7 @@ export default class XPathCSSGenerator {
 	 * Updates the global style.
 	 */
 	public update(): void {
-		const cache = (<typeof XPathCSSGenerator>this.constructor).cache;
+		const cache = this.getCache();
 		const styles = Array.from(this.element.shadowRoot.querySelectorAll('style'));
 		const cacheKey = this.getCacheKey(this.element.shadowRoot);
 
@@ -93,7 +91,7 @@ export default class XPathCSSGenerator {
 					}
 
 					if (scoped) {
-						this.id = (<typeof XPathCSSGenerator>this.constructor).generateID();
+						this.id = this.generateID();
 						this.element.setAttribute(this.scopeAttributeName, this.id);
 
 						cache[cacheKey] = this.id;
@@ -171,7 +169,7 @@ export default class XPathCSSGenerator {
 	 * @return {string} CSS.
 	 */
 	private getScopedRule(rule: CSSRule, cache: { [k: string]: Element[] }): string {
-		const baseSelector = `${this.element.tagName.toLowerCase()}[${this.scopeAttributeName}="${ID_PLACEHOLDER}"]`;
+		const baseSelector = `[${this.scopeAttributeName}="${ID_PLACEHOLDER}"]`;
 		let selectors = '';
 		let css = rule.css;
 
@@ -280,7 +278,9 @@ export default class XPathCSSGenerator {
 				? childSelector.replace(/\[.+\]/g, '')
 				: childSelector;
 			const childSelectorElement = selectorWithoutAttribute.split(':')[0];
-			const elementSelector = childSelectorElement ? childSelectorElement : childSelector;
+			const elementSelector = childSelectorElement
+				? childSelectorElement.split('\n').reverse()[0]
+				: childSelector.split('\n').reverse()[0];
 			const cached =
 				baseElement === this.element || baseElement === this.element['shadowRoot'] ? cache[elementSelector] : null;
 			const elements: Element[] = cached ? cached : Array.from(baseElement.querySelectorAll(elementSelector));
@@ -416,9 +416,9 @@ export default class XPathCSSGenerator {
 	 * @param {ShadowRoot|Element} element Element.
 	 * @return {string} Cache key.
 	 */
-	private getCacheKey(element: Element|ShadowRoot): string {
+	private getCacheKey(element: Element | ShadowRoot): string {
 		const structureElement = element;
-		let key = !(element instanceof ShadowRoot)  ? this.getElementSignature(element) : '';
+		let key = !(element instanceof ShadowRoot) ? this.getElementSignature(element) : '';
 
 		if (structureElement.children) {
 			for (let i = 0, max = structureElement.children.length; i < max; i++) {
@@ -452,12 +452,37 @@ export default class XPathCSSGenerator {
 	}
 
 	/**
-	 * Returns an unique ID.
+	 * Returns cache.
+	 *
 	 * @return {string} ID.
 	 */
-	private static generateID(): string {
-		const index = this.index;
-		this.index++;
+	private getCache(): { [k: string]: string } {
+		return this.getGlobalStore().cache;
+	}
+
+	/**
+	 * Returns an unique ID.
+	 *
+	 * @return {string} ID.
+	 */
+	private generateID(): string {
+		const store = this.getGlobalStore();
+		const index = store.index;
+		store.index++;
 		return ABC[index] !== undefined ? ABC[index] : 'a' + index;
+	}
+
+	/**
+	 * Returns store.
+	 *
+	 * @return {string} ID.
+	 */
+	private getGlobalStore(): { cache: { [k: string]: string }; index: number } {
+		window['$liveScopedCSSPolyfill'] = window['$liveScopedCSSPolyfill'] || {
+			cache: {},
+			index: 0
+		};
+
+		return window['$liveScopedCSSPolyfill'];
 	}
 }
